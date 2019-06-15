@@ -1,7 +1,7 @@
 package org.openmuc.jmbus;
 
 /*
- * Copyright 2010-14 Fraunhofer ISE
+ * Copyright 2010-15 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org

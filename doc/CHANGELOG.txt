@@ -1,3 +1,7 @@
+v2.1.0 21-Jan-2015
+------------------
+- added support for secondary addressing using wired M-Bus
+
 v2.0.0 02-Dec-2014
 ------------------
 - changed license from LGPL to GPLv3 or higher

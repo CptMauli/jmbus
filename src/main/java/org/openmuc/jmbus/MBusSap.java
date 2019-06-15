@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-14 Fraunhofer ISE
+ * Copyright 2010-15 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -25,7 +25,11 @@ import gnu.io.SerialPort;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.concurrent.TimeoutException;
+
+import org.openmuc.jmbus.MBusMessage.FrameType;
 
 /**
  * M-Bus Application Layer Service Access Point - Use this access point to communicate using the M-Bus wired protocol.
@@ -44,6 +48,7 @@ public class MBusSap {
 	private DataInputStream is;
 
 	private int timeout = 5000;
+	private SecondaryAddress secondaryAddress = null;
 
 	/**
 	 * Creates an M-Bus Service Access Point that is used to read meters.
@@ -102,7 +107,7 @@ public class MBusSap {
 	 * variable data structure from the received RSP_UD frame.
 	 * 
 	 * @param primaryAddress
-	 *            the address of the meter to read.
+	 *            the primary address of the meter to read. For secondary address use 0xfd.
 	 * @return the variable data structure from the received RSP_UD frame
 	 * @throws IOException
 	 *             if any kind of error (including timeout) occurs while trying to read the remote device. Note that the
@@ -127,20 +132,64 @@ public class MBusSap {
 
 	}
 
-	// public VariableDataStructure read(SecondaryAddress secondaryAddress) throws IOException, TimeoutException {
-	//
-	// if (serialTransceiver.isClosed() == true) {
-	// throw new IllegalStateException("Serial port is not open.");
-	// }
-	//
-	// if (selectComponent(secondaryAddress, timeout)) {
-	// return read(0xfd);
-	// }
-	// else {
-	// throw new IOException("unbable to select component");
-	// }
-	//
-	// }
+	/**
+	 * Selects the meter with the specified secondary address. After this the meter can be read on primary address 0xfd.
+	 * 
+	 * @param secondaryAddress
+	 *            the secondary address of the meter to select.
+	 * @throws IOException
+	 *             if any kind of error (including timeout) occurs while trying to read the remote device. Note that the
+	 *             connection is not closed when an IOException is thrown.
+	 * @throws TimeoutException
+	 *             if no response at all (not even a single byte) was received from the meter within the timeout span.
+	 */
+	public void selectComponent(SecondaryAddress secondaryAddress) throws IOException, TimeoutException {
+		this.secondaryAddress = secondaryAddress;
+		componentSelection(false);
+	}
+
+	/**
+	 * Deselects the previously selected meter.
+	 * 
+	 * @throws IOException
+	 *             if any kind of error (including timeout) occurs while trying to read the remote device. Note that the
+	 *             connection is not closed when an IOException is thrown.
+	 * @throws TimeoutException
+	 *             if no response at all (not even a single byte) was received from the meter within the timeout span.
+	 */
+	public void deselectComponent() throws IOException, TimeoutException {
+		if (secondaryAddress != null) {
+			componentSelection(true);
+			secondaryAddress = null;
+		}
+	}
+
+	private void componentSelection(boolean deselect) throws IOException, TimeoutException {
+		ByteBuffer bf = ByteBuffer.allocate(8);
+		byte[] ba = new byte[8];
+		MBusMessage lPdu;
+
+		bf.order(ByteOrder.LITTLE_ENDIAN);
+
+		bf.put(secondaryAddress.asByteArray());
+
+		bf.position(0);
+		bf.get(ba, 0, 8);
+
+		// send select/deselect
+		if (deselect) {
+			sendLongMessage(0xfd, 0x53, 0x56, 8, ba);
+		}
+		else {
+			sendLongMessage(0xfd, 0x53, 0x52, 8, ba);
+		}
+
+		lPdu = receiveMessage();
+
+		if (lPdu == null || lPdu.getFrameType() != FrameType.SIMPLE_CHAR) {
+			throw new IOException("unbable to select component");
+		}
+	}
 
 	private void sendShortMessage(int slaveAddr, int cmd) throws IOException {
 		outputBuffer[0] = 0x10;

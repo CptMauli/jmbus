@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-14 Fraunhofer ISE
+ * Copyright 2010-15 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -24,7 +24,9 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 import org.openmuc.jmbus.DecodingException;
+import org.openmuc.jmbus.HexConverter;
 import org.openmuc.jmbus.MBusSap;
+import org.openmuc.jmbus.SecondaryAddress;
 import org.openmuc.jmbus.VariableDataStructure;
 
 /**
@@ -50,28 +52,44 @@ public class ReadMeter {
 	}
 
 	public static void main(String[] args) {
-		if (args.length < 2 || args.length > 3) {
+
+		int argsLength = args.length;
+		if (argsLength < 2 || argsLength > 3) {
 			printUsage();
 			System.exit(1);
 		}
 
 		String serialPortName = args[0];
+		String address = args[1];
 		int primaryAddress = 0;
+		SecondaryAddress secondaryAddress = null;
+		int addrLength = address.length();
 
-		try {
-			primaryAddress = Integer.parseInt(args[1]);
-		} catch (NumberFormatException e) {
-			System.err.println("Error, the <primary_address> parameter is not an integer value.");
-			System.exit(1);
+		if (addrLength > 3) {
+			if (addrLength < 16 || addrLength > 16) {
+				error("Error, the <secondary_address> has the wrong length. Should be 16 but is " + addrLength);
+			}
+			try {
+				secondaryAddress = SecondaryAddress.getFromLongHeader(
+						HexConverter.getByteArrayFromShortHexString(address), 0);
+			} catch (NumberFormatException e) {
+				error("Error, the <secondary_address> parameter contains non hexadecimal character.");
+			}
+		}
+		else {
+			try {
+				primaryAddress = Integer.parseInt(address);
+			} catch (NumberFormatException e) {
+				error("Error, the <primary_address> parameter is not an integer value.");
+			}
 		}
 
 		int baudRate = 2400;
-		if (args.length == 3) {
+		if (argsLength == 3) {
 			try {
 				baudRate = Integer.parseInt(args[2]);
 			} catch (NumberFormatException e) {
-				System.err.println("Error, the <baud_rate> parameter is not an integer value.");
-				System.exit(1);
+				error("Error, the <baud_rate> parameter is not an integer value.");
 			}
 		}
 
@@ -79,21 +97,24 @@ public class ReadMeter {
 		try {
 			mBusSap.open();
 		} catch (IOException e2) {
-			System.err.println("Failed to open serial port: " + e2.getMessage());
-			System.exit(1);
+			error("Failed to open serial port: " + e2.getMessage());
 		}
 
 		VariableDataStructure variableDataStructure = null;
 		try {
-			variableDataStructure = mBusSap.read(primaryAddress);
+			if (secondaryAddress != null) {
+				mBusSap.selectComponent(secondaryAddress);
+				variableDataStructure = mBusSap.read(0xfd);
+			}
+			else {
+				variableDataStructure = mBusSap.read(primaryAddress);
+			}
 		} catch (IOException e) {
-			System.err.println("Error reading meter: " + e.getMessage());
 			mBusSap.close();
-			System.exit(1);
+			error("Error reading meter: " + e.getMessage());
 		} catch (TimeoutException e) {
-			System.err.print("Read attempt timed out");
 			mBusSap.close();
-			System.exit(1);
+			error("Read attempt timed out.");
 		}
 
 		try {
@@ -108,6 +129,11 @@ public class ReadMeter {
 
 		mBusSap.close();
 
+	}
+
+	private static void error(String errMsg) {
+		System.err.println(errMsg);
+		System.exit(1);
 	}
 
 }

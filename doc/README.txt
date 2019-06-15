@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-14 Fraunhofer ISE
+ * Copyright 2010-15 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -19,7 +19,7 @@
  *
  */
 
-Authors: Stefan Feuerhahn & Michael Zillgith
+Authors: Stefan Feuerhahn, Michael Zillgith & Dirk Zimmermann
 
 For documentation take a look at the user guide in the doc/userguide
 folder of the distribution or online at http://www.openmuc.org.
