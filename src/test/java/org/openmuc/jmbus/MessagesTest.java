@@ -1,9 +1,29 @@
-package org.openmuc.jmbus.test;
+/*
+ * Copyright 2010-14 Fraunhofer ISE
+ *
+ * This file is part of jMBus.
+ * For more information visit http://www.openmuc.org
+ *
+ * jMBus is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * jMBus is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+package org.openmuc.jmbus;
 
 import org.junit.Ignore;
 
 @Ignore
-public class TestMessages {
+public class MessagesTest {
 	/* RESP-UD EMH DIZ */
 	public static byte[] testMsg1 = new byte[] { (byte) 0x68, (byte) 0x21, (byte) 0x21, (byte) 0x68, (byte) 0x08,
 			(byte) 0x01, (byte) 0x72, (byte) 0x02, (byte) 0x37, (byte) 0x62, (byte) 0x00, (byte) 0xa8, (byte) 0x15,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-13 Fraunhofer ISE
+ * Copyright 2010-14 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -18,7 +18,6 @@
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 package org.openmuc.jmbus;
 
 import java.text.ParseException;
@@ -33,7 +32,7 @@ import java.util.Calendar;
  * unit are encoded in the VIB (Value Information Block).
  * 
  */
-public class VariableDataBlock {
+public final class VariableDataBlock {
 
 	public enum DataType {
 		LONG, DOUBLE, DATE, STRING;
@@ -70,7 +69,7 @@ public class VariableDataBlock {
 	// VIB Fields:
 	private Description description;
 	private byte multiplier;
-	private int unit;
+	private DlmsUnit unit;
 
 	public VariableDataBlock(byte[] dib, byte[] vib, byte[] data, Integer lvar) {
 		this.dib = dib;
@@ -183,7 +182,7 @@ public class VariableDataBlock {
 		return multiplier;
 	}
 
-	public int getUnit() {
+	public DlmsUnit getUnit() {
 		if (!parsed) {
 			throw new RuntimeException("Variable Data Block was not parsed.");
 		}

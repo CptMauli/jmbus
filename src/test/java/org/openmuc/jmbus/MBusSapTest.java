@@ -1,23 +1,37 @@
-package org.openmuc.jmbus.test;
+/*
+ * Copyright 2010-14 Fraunhofer ISE
+ *
+ * This file is part of jMBus.
+ * For more information visit http://www.openmuc.org
+ *
+ * jMBus is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * jMBus is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+package org.openmuc.jmbus;
 
 import java.io.IOException;
 import java.text.ParseException;
 
 import junit.framework.TestCase;
 
-import org.openmuc.jmbus.DlmsUnit;
-import org.openmuc.jmbus.Util;
-import org.openmuc.jmbus.VariableDataBlock;
-import org.openmuc.jmbus.VariableDataResponse;
-import org.openmuc.jmbus.internal.MBusLPdu;
-
-public class TestMBusASAP extends TestCase {
+public class MBusSapTest extends TestCase {
 	public void testResponseParser() {
 
 	}
 
 	public void testParser2() {
-		byte[] msg = TestMessages.testMsg4;
+		byte[] msg = MessagesTest.testMsg4;
 
 		MBusLPdu lpdu = new MBusLPdu(msg);
 
@@ -48,12 +62,9 @@ public class TestMBusASAP extends TestCase {
 
 		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
 			try {
-				String difVif = Util.composeHexStringFromByteArray(vdb.getDIB()) + "/"
-						+ Util.composeHexStringFromByteArray(vdb.getVIB());
 
 				vdb.parse();
 
-				System.out.print(difVif + " ");
 				if (vdb.getDescription() != null) {
 					System.out.print(vdb.getDescription().toString());
 				}
@@ -62,7 +73,7 @@ public class TestMBusASAP extends TestCase {
 					System.out.print(" Value: " + vdb.getData().toString());
 				}
 
-				System.out.print(" Unit: " + DlmsUnit.getString(vdb.getUnit()));
+				System.out.print(" Unit: " + vdb.getUnit());
 
 				System.out.println();
 			} catch (ParseException e) {
@@ -74,7 +85,7 @@ public class TestMBusASAP extends TestCase {
 	}
 
 	public void testParser3() {
-		byte[] msg = TestMessages.testMsg5;
+		byte[] msg = MessagesTest.testMsg5;
 
 		System.out.println("Test 3:");
 
@@ -107,12 +118,9 @@ public class TestMBusASAP extends TestCase {
 
 		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
 			try {
-				String difVif = Util.composeHexStringFromByteArray(vdb.getDIB()) + "/"
-						+ Util.composeHexStringFromByteArray(vdb.getVIB());
 
 				vdb.parse();
 
-				System.out.print(difVif + " ");
 				if (vdb.getDescription() != null) {
 					System.out.print(vdb.getDescription().toString());
 				}
@@ -121,7 +129,7 @@ public class TestMBusASAP extends TestCase {
 					System.out.print(" Value: " + vdb.getData().toString());
 				}
 
-				System.out.print(" Unit: " + DlmsUnit.getString(vdb.getUnit()));
+				System.out.print(" Unit: " + vdb.getUnit());
 
 				System.out.println();
 			} catch (ParseException e) {
@@ -132,7 +140,7 @@ public class TestMBusASAP extends TestCase {
 	}
 
 	public void testParser4() {
-		byte[] msg = TestMessages.testMsg6;
+		byte[] msg = MessagesTest.testMsg6;
 
 		System.out.println("Test 4:");
 
@@ -165,12 +173,9 @@ public class TestMBusASAP extends TestCase {
 
 		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
 			try {
-				String difVif = Util.composeHexStringFromByteArray(vdb.getDIB()) + "/"
-						+ Util.composeHexStringFromByteArray(vdb.getVIB());
 
 				vdb.parse();
 
-				System.out.print(difVif + " ");
 				if (vdb.getDescription() != null) {
 					System.out.print(vdb.getDescription().toString());
 				}
@@ -179,7 +184,7 @@ public class TestMBusASAP extends TestCase {
 					System.out.print(" Value: " + vdb.getData().toString());
 				}
 
-				System.out.print(" Unit: " + DlmsUnit.getString(vdb.getUnit()));
+				System.out.print(" Unit: " + vdb.getUnit());
 
 				System.out.println();
 			} catch (ParseException e) {
@@ -190,7 +195,7 @@ public class TestMBusASAP extends TestCase {
 	}
 
 	public void testParser5() {
-		byte[] msg = TestMessages.testMsg7;
+		byte[] msg = MessagesTest.testMsg7;
 
 		System.out.println("Test 5:\n-------");
 
@@ -223,12 +228,9 @@ public class TestMBusASAP extends TestCase {
 
 		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
 			try {
-				String difVif = Util.composeHexStringFromByteArray(vdb.getDIB()) + "/"
-						+ Util.composeHexStringFromByteArray(vdb.getVIB());
 
 				vdb.parse();
 
-				System.out.print(difVif + " ");
 				if (vdb.getDescription() != null) {
 					System.out.print(vdb.getDescription().toString());
 				}
@@ -237,7 +239,7 @@ public class TestMBusASAP extends TestCase {
 					System.out.print(" Value: " + vdb.getData().toString());
 				}
 
-				System.out.print(" Unit: " + DlmsUnit.getString(vdb.getUnit()));
+				System.out.print(" Unit: " + vdb.getUnit());
 
 				System.out.println();
 			} catch (ParseException e) {

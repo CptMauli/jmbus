@@ -1,3 +1,11 @@
+1.0.0 07-Jan-2014
+-----------------
+- bug fix parsing manufacturer specific data
+- simple ReadMeter application is now part of the library. Its usage
+  is documented in README.txt
+- serialports can be closed and opened again through the API
+- DLMSUnit is now an Enum
+
 0.10.0 04-Sep-2013
 ------------------
 - read now supports timeouts

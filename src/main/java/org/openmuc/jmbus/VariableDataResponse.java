@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-13 Fraunhofer ISE
+ * Copyright 2010-14 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -18,7 +18,6 @@
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 package org.openmuc.jmbus;
 
 import java.io.ByteArrayOutputStream;
@@ -28,11 +27,9 @@ import java.util.List;
 import java.util.Vector;
 
 /**
- * Representation of the RESP-UD message. Will be returned by MBusASAP.readMeter().
- * 
- * @author mzillgit
+ * Representation of the RESP-UD message. Will be returned by MBusSap.readMeter().
  */
-public class VariableDataResponse {
+public final class VariableDataResponse {
 
 	// Device Types
 	public static final byte OTHER = 0, OIL = 1, ELECTRICITY = 2, GAS = 3, HEAT = 4, STEAM = 5, WARM_WATER = 6,
@@ -77,8 +74,18 @@ public class VariableDataResponse {
 		return meterID;
 	}
 
-	public short getManufacturerID() {
-		return manufacturerID;
+	public String getManufacturerID() {
+		char c, c1, c2;
+
+		c = (char) ((manufacturerID & 0x001f) + 64);
+
+		manufacturerID = (short) (manufacturerID >> 5);
+		c1 = (char) ((manufacturerID & 0x001f) + 64);
+
+		manufacturerID = (manufacturerID);
+		c2 = (char) ((manufacturerID & 0x001f) + 64);
+
+		return "" + c2 + c1 + c;
 	}
 
 	public byte getVersion() {
@@ -147,9 +154,9 @@ public class VariableDataResponse {
 				// Manufacturer specific data
 
 				ByteArrayOutputStream tmp = new ByteArrayOutputStream();
-				do {
+				while (buf.position() < buf.limit()) {
 					tmp.write(buf.get());
-				} while (buf.position() < buf.limit());
+				}
 				manufacturerData = tmp.toByteArray();
 
 				return;
@@ -285,7 +292,7 @@ public class VariableDataResponse {
 				throw new IOException("Unable to decode message with this CI Field: " + ciField);
 			}
 		} catch (RuntimeException e) {
-			throw new IOException(e.getMessage());
+			throw new IOException(e);
 		}
 
 	}

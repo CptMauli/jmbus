@@ -1,4 +1,24 @@
-package org.openmuc.jmbus.test;
+/*
+ * Copyright 2010-14 Fraunhofer ISE
+ *
+ * This file is part of jMBus.
+ * For more information visit http://www.openmuc.org
+ *
+ * jMBus is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * jMBus is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+package org.openmuc.jmbus;
 
 import java.text.ParseException;
 import java.util.Date;
@@ -6,11 +26,9 @@ import java.util.Date;
 import junit.framework.TestCase;
 
 import org.junit.Test;
-import org.openmuc.jmbus.DlmsUnit;
-import org.openmuc.jmbus.VariableDataBlock;
 import org.openmuc.jmbus.VariableDataBlock.Description;
 
-public class TestVDBParser extends TestCase {
+public class VdbParserTest extends TestCase {
 
 	public void testINT64() {
 		VariableDataBlock vdb = new VariableDataBlock(new byte[] { (byte) 0x07 }, new byte[] { (byte) 0x04 },
@@ -97,7 +115,7 @@ public class TestVDBParser extends TestCase {
 
 	}
 
-	private void assertParsingResults(VariableDataBlock vdb, Description desc, int unit, byte scaler, Object data) {
+	private void assertParsingResults(VariableDataBlock vdb, Description desc, DlmsUnit unit, byte scaler, Object data) {
 		try {
 			vdb.parse();
 		} catch (ParseException e) {

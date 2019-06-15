@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-13 Fraunhofer ISE
+ * Copyright 2010-14 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -19,52 +19,109 @@
  *
  */
 
-Authors: Michael Zillgith & Stefan Feuerhahn
+Authors: Stefan Feuerhahn & Michael Zillgith
 
 jMBus is a Java library implementing an M-Bus (Meter-Bus) master.  It
 can be used to read metering data from M-Bus slaves such as gas,
-water, heat, or electricity meters. The software has been tested under
-Linux but should also work on Windows with little or no modifications.
-
-The software has been tested with a few meters but does not support
-all possible meters yet.  We are thankful for any code contributions.
+water, heat, or electricity meters.
 
 -The library and its dependencies are found in the folders
  "build/libs/" and "dependencies"
--Javadocs can be found in the build/docs folder
+-Javadocs can be found in the build/javadoc folder
 
 For the latest release of this software visit http://www.openmuc.org .
-
-
-Using the example:
-------------------
-For an example on how to use jMBus see src/sample/java/ReadMeter.java
-
-You can create Eclipse project files as explained here:
-http://www.openmuc.org/index.php?id=28 and run the sample from within
-Eclipse or you can compile and execute it in a terminal. To compile
-and execute the sample on Linux use something like this:
-go to the folder src/sample/java/
->javac -cp "../../../build/libs/jmbus-<version>.jar" ReadMeter.java
->java -cp "../../../build/libs/jmbus-<version>.jar:../../../dependencies/rxtxcomm_api-2.2pre2-11_bundle.jar:./" ReadMeter /dev/ttyUSB0 p1
-
-Note that jMBus depends on the Java Library RXTXcomm. This library in
-turn depends on librxtxSerial.so under Linux.
-
-You can activate debug information if the system property
-org.openmuc.jmbus.debug exists.  
-e.g. java -Dorg.openmuc.jmbus.debug -cp ... MyMBusApplication
-
-
-Develop jMBus:
---------------
-Please go to http://www.openmuc.org/index.php?id=28 for information on
-how to rebuild the library after you have modified it and how to
-generate Eclipse project files.
 
 Please send us any code improvements so we can integrate them in our
 distribution.
 
+Read Meter Application:
+-----------------------
+The library includes an application that reads a given meter and
+prints the received data to stdout. This application can also be
+used as an example on how to use the the library. You can find the
+source code of ReadMeter.java in src/main/java/org/openmuc/jmbus/.
+
+You can can execute ReadMeter from the console with the following
+command (from this projects root directory):
+Linux/Unix:
+>java -cp "build/libs/jmbus-<version>.jar:dependencies/rxtxcomm_api-2.2pre2-11_bundle.jar" org.openmuc.jmbus.ReadMeter
+Windows:
+>java -cp "build\libs\jmbus-<version>.jar;dependencies\rxtxcomm_api-2.2pre2-11_bundle.jar" org.openmuc.jmbus.ReadMeter
+
+Sometimes you might have to add a system property so that java finds
+the jni libs. e.g.: -Djava.library.path=/usr/lib/jni
+
+As an alternative you can create Eclipse project files as explained here:
+http://www.openmuc.org/index.php?id=28 and run ReadMeter from within
+Eclipse
+
+RXTX - Java library for serial communication
+--------------------------------------------
+
+Note that jMBus depends on the Java library RXTX
+(http://rxtx.qbang.org). A binary version of this library can be found
+in the dependencies folder. This library in turn depends on native
+libraries that you have to install first. Many Linux distributions
+offer the package librxtx-java to install these native libraries. For
+instructions on how to install these on Windows visit
+http://rxtx.qbang.org/wiki/index.php/Installation_for_Windows
+
+RXTX (Copyright 1997-2004 by Trent Jarvi) is licensed under LGPL(v2 or
+later). Beware there exist several different versions of
+rxtxcomm-2.2pre2. The version of RXTX in the depencies folder was
+taken from Debian (version 2.2pre2-11) and has many bug fixes compared
+to the latest version on the website. This version was converted to a
+bundle using bnd: "java -jar bnd/bnd-1.50.0.jar wrap
+RXTXcomm-2.2pre2.jar". The source code of this version can be obtained
+from the Debian rxtx src package. E.g. from here:
+http://packages.ubuntu.com/source/saucy/rxtx
+
+
+Develop jMBus:
+--------------
+
+We use the Gradle build automation tool. The distribution contains a
+fully functional gradle build file ("build.gradle"). Thus if you
+changed code and want to rebuild a library you can do it easily with
+Gradle. Also if you want to import our software into Eclipse you can
+easily create Eclipse project files using Gradle. Just follow these
+instructions (for the most up to date version of these instructions
+visit http://www.openmuc.org/index.php?id=28):
+
+Install Gradle: 
+
+- Download Gradle from the website: www.gradle.org
+
+- Set the PATH variable: e.g. in Linux add to your .bashrc: export
+  PATH=$PATH:/home/user/path/to/gradle-version/bin
+
+- If you're behind a proxy you can set the proxy options in the
+  gradle.properties file as explained here:
+  http://www.gradle.org/docs/current/userguide/build_environment.html.
+
+- Setting "org.gradle.daemon=true" in gradle.properties will speed up
+  Gradle
+
+Create Eclipse project files using Gradle:
+
+- with the command "gradle eclipse" you can generate Eclipse project
+  files
+
+- It is important to add the GRADLE_USER_HOME variable in Eclipse:
+  Window->Preferences->Java->Build Path->Classpath Variable. Set it to
+  the path of the .gradle folder in your home directory
+  (e.g. /home/someuser/.gradle (Unix) or C:/Documents and
+  Settings/someuser/.gradle (Windows))
+
+Rebuild a library:
+
+- After you have modified the code you can completely rebuild the code
+  using the command "gradle clean build" This will also execute the
+  junit tests.
+
+- You can also assemble a new distribution tar file: the command
+  "gradle clean tar" will build everything and put a new distribution
+  file in the folder "build/distribution".
 
 Information on M-Bus:
 ---------------------

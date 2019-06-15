@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-13 Fraunhofer ISE
+ * Copyright 2010-14 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -18,14 +18,11 @@
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-package org.openmuc.jmbus.internal;
+package org.openmuc.jmbus;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
-import org.openmuc.jmbus.Util;
 
 /**
  * 
@@ -36,7 +33,7 @@ import org.openmuc.jmbus.Util;
 
 // TODO - Implement checksum test! - Implement short frame parsing
 
-public class MBusLPdu {
+final class MBusLPdu {
 
 	// Message types according to IEC 870-2 FT1.2
 	public static final int MSG_TYPE_SIMPLE_CHAR = 1;
@@ -59,12 +56,12 @@ public class MBusLPdu {
 
 	boolean parsed;
 
-	public MBusLPdu(byte[] lpdu) {
+	MBusLPdu(byte[] lpdu) {
 		this.lpdu = lpdu;
 		parsed = false;
 	}
 
-	public ByteBuffer getAPDU() {
+	ByteBuffer getAPDU() {
 		if (!parsed) {
 			throw new RuntimeException("MBusLPDU was not parsed.");
 		}
@@ -74,28 +71,28 @@ public class MBusLPdu {
 		return buf;
 	}
 
-	public byte getAField() {
+	byte getAField() {
 		if (!parsed) {
 			throw new RuntimeException("MBusLPDU was not parsed.");
 		}
 		return aField;
 	}
 
-	public byte getCField() {
+	byte getCField() {
 		if (!parsed) {
 			throw new RuntimeException("MBusLPDU was not parsed.");
 		}
 		return cField;
 	}
 
-	public int getType() {
+	int getType() {
 		if (!parsed) {
 			throw new RuntimeException("MBusLPDU was not parsed.");
 		}
 		return msgType;
 	}
 
-	public void parse() throws IOException {
+	void parse() throws IOException {
 
 		parsed = false;
 
@@ -139,14 +136,5 @@ public class MBusLPdu {
 
 		parsed = true;
 
-	}
-
-	public byte[] getRawMessage() {
-		return lpdu;
-	}
-
-	@Override
-	public String toString() {
-		return Util.composeHexStringFromByteArray(lpdu);
 	}
 }
