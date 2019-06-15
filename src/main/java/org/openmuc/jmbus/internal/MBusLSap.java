@@ -1,29 +1,29 @@
-package org.openmuc.jmbus;
-
 /*
- * Copyright Fraunhofer ISE, 2010
- * Author(s): Michael Zillgith
- *            Stefan Feuerhahn
- *    
+ * Copyright 2010-13 Fraunhofer ISE
+ *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
- * 
+ *
  * jMBus is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * the Free Software Foundation, either version 2.1 of the License, or
  * (at your option) any later version.
- * 
+ *
  * jMBus is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
+package org.openmuc.jmbus.internal;
+
+import gnu.io.CommPort;
 import gnu.io.CommPortIdentifier;
+import gnu.io.NoSuchPortException;
 import gnu.io.PortInUseException;
 import gnu.io.SerialPort;
 import gnu.io.UnsupportedCommOperationException;
@@ -33,31 +33,26 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Enumeration;
 import java.util.concurrent.TimeoutException;
 
 /**
  * M-Bus Link Layer Service Access Point
  * 
  */
-public class MBusLSAP {
-	private CommPortIdentifier portId;
+public class MBusLSap {
+
 	private SerialPort serialPort;
 
-	private byte[] outputBuffer = new byte[1000];
-	private byte[] inputBuffer = new byte[1000];
+	private final byte[] outputBuffer = new byte[1000];
+	private final byte[] inputBuffer = new byte[1000];
 	private DataOutputStream os;
 	private DataInputStream inStream;
-	private int timeout;
 
-	public MBusLSAP(int timeout) {
-		this.timeout = timeout;
-	}
-
-	public boolean selectComponent(int id, short manuf, byte version, byte medium) throws TimeoutException, IOException {
+	public boolean selectComponent(int id, short manuf, byte version, byte medium, int timeout)
+			throws TimeoutException, IOException {
 		ByteBuffer bf = ByteBuffer.allocate(8);
 		byte[] ba = new byte[8];
-		MBusLPDU msg;
+		MBusLPdu msg;
 
 		bf.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -72,10 +67,10 @@ public class MBusLSAP {
 		// send select
 		sendLongMessage(0xfd, 0x53, 0x52, 8, ba);
 
-		msg = receiveMessage();
+		msg = receiveMessage(timeout);
 		if (msg != null) {
 			msg.parse();
-			if (msg.msgType == MBusLPDU.MSG_TYPE_SIMPLE_CHAR) {
+			if (msg.msgType == MBusLPdu.MSG_TYPE_SIMPLE_CHAR) {
 				return true;
 			}
 		}
@@ -88,14 +83,14 @@ public class MBusLSAP {
 	 * @throws TimeoutException
 	 * @throws IOException
 	 */
-	public MBusLPDU receiveMessage() throws TimeoutException, IOException {
+	public MBusLPdu receiveMessage(int timeout) throws TimeoutException, IOException {
 
 		int timeval = 0;
 		int readBytes = 0;
 		int i;
 		int messageLength = -1;
 
-		while (timeval < timeout && readBytes != messageLength) {
+		while ((timeout == 0 || timeval < timeout) && readBytes != messageLength) {
 			if (inStream.available() > 0) {
 				timeval = 0;
 				int read;
@@ -121,7 +116,7 @@ public class MBusLSAP {
 
 			timeval += 100;
 
-		} /* while */
+		}
 
 		if (readBytes != messageLength) {
 			throw new TimeoutException("Timeout listening for response message.");
@@ -132,7 +127,7 @@ public class MBusLSAP {
 			lpdu[i] = inputBuffer[i];
 		}
 
-		MBusLPDU rcvdMessage = new MBusLPDU(lpdu);
+		MBusLPdu rcvdMessage = new MBusLPdu(lpdu);
 		rcvdMessage.parse();
 
 		return rcvdMessage;
@@ -178,60 +173,109 @@ public class MBusLSAP {
 		}
 
 		return true;
-	} /* sendLongMessage() */
+	}
 
-	public void configureSerialPort(String device, String configStr) throws IOException {
-		// TODO configStr is ignored for now
+	public void configureSerialPort(String portName, String serialPortParams) throws IOException,
+			IllegalArgumentException {
 
-		Enumeration<?> portList;
+		// default is 2400/8E1
+		int baudrate = 2400;
+		int databits = 8;
+		int stopbits = 1;
+		int parity = SerialPort.PARITY_EVEN;
 
-		portList = CommPortIdentifier.getPortIdentifiers();
+		if (!serialPortParams.isEmpty()) {
+			try {
+				String[] splitConfig = serialPortParams.split("/");
 
-		while (portList.hasMoreElements()) {
-			portId = (CommPortIdentifier) portList.nextElement();
-			if (portId.getPortType() == CommPortIdentifier.PORT_SERIAL) {
+				baudrate = Integer.parseInt(splitConfig[0]);
 
-				if (portId.getName().equals(device)) {
-					try {
-						serialPort = (SerialPort) portId.open("mbus_connector", 2000);
-					} catch (PortInUseException e) {
-						throw new IOException("Port " + device + " is already in use!");
-					}
+				databits = Character.digit(splitConfig[1].charAt(0), 10);
 
-					try {
-						serialPort.setSerialPortParams(2400, // was 2400
-								SerialPort.DATABITS_8, SerialPort.STOPBITS_1, SerialPort.PARITY_EVEN);
-					} catch (UnsupportedCommOperationException e) {
-						throw new IOException("Error setting communication parameters!");
-					}
-
-					try {
-						os = new DataOutputStream(serialPort.getOutputStream());
-						inStream = new DataInputStream(serialPort.getInputStream());
-					} catch (IOException e) {
-						throw new IOException("Cannot catch output stream!");
-					}
-
-					return;
+				if (databits > 8 || databits < 5) {
+					throw new IllegalArgumentException();
 				}
-			}
-		} /* while (portList.hasMoreElements()) */
 
-		throw new IOException("Port not found: " + device + '!');
-	} /* initializeSerialPort() */
+				stopbits = Character.digit(splitConfig[1].charAt(2), 10);
+
+				if (stopbits < 1 || stopbits > 3) {
+					throw new IllegalArgumentException();
+				}
+
+				char parityChar = splitConfig[1].charAt(1);
+
+				switch (parityChar) {
+				case 'N':
+					parity = SerialPort.PARITY_NONE;
+					break;
+				case 'E':
+					parity = SerialPort.PARITY_EVEN;
+					break;
+				default:
+					throw new IllegalArgumentException();
+				}
+			} catch (Exception e) {
+				throw new IllegalArgumentException();
+			}
+		}
+
+		CommPortIdentifier portIdentifier;
+		try {
+			portIdentifier = CommPortIdentifier.getPortIdentifier(portName);
+		} catch (NoSuchPortException e) {
+			throw new IOException("Serial port with given name does not exist", e);
+		}
+
+		if (portIdentifier.isCurrentlyOwned()) {
+			throw new IOException("Serial port is currently in use.");
+		}
+
+		CommPort commPort;
+		try {
+			commPort = portIdentifier.open(this.getClass().getName(), 2000);
+		} catch (PortInUseException e) {
+			throw new IOException("Serial port is currently in use.", e);
+		}
+
+		if (!(commPort instanceof SerialPort)) {
+			commPort.close();
+			throw new IOException("The specified CommPort is no serial port");
+		}
+
+		serialPort = (SerialPort) commPort;
+
+		try {
+			serialPort.setSerialPortParams(baudrate, databits, stopbits, parity);
+		} catch (UnsupportedCommOperationException e) {
+			serialPort.close();
+			throw new IOException("Unable to set the given serial comm parameters");
+		}
+
+		try {
+			os = new DataOutputStream(serialPort.getOutputStream());
+			inStream = new DataInputStream(serialPort.getInputStream());
+		} catch (IOException e) {
+			serialPort.close();
+			throw new IOException("Error getting input or output stream from serial port", e);
+		}
+
+	}
 
 	/* This operation belongs to application layer !!! */
-	public boolean masterToSlaveDataSend(int slaveAddr, byte[] data) throws TimeoutException, IOException {
-		MBusLPDU msg;
-
-		sendLongMessage(slaveAddr, 0x53, 0x51, data.length, data);
-		msg = receiveMessage();
-
-		if (msg != null)
-			return true;
-		else
-			return false;
-	}
+	// TODO: revise:
+	// public boolean masterToSlaveDataSend(int slaveAddr, byte[] data) throws TimeoutException, IOException {
+	// MBusLPdu msg;
+	//
+	// sendLongMessage(slaveAddr, 0x53, 0x51, data.length, data);
+	//
+	// msg = receiveMessage(timeout);
+	//
+	// if (msg != null)
+	// return true;
+	// else
+	// return false;
+	// return true
+	// }
 
 	public void closeSerialPort() {
 		if (serialPort != null) {
@@ -239,4 +283,4 @@ public class MBusLSAP {
 		}
 	}
 
-} /* public class MBusConnector */
+}

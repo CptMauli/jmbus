@@ -1,26 +1,25 @@
 /*
- * Copyright Fraunhofer ISE, 2010-12
- * Author(s): Michael Zillgith
- *            Stefan Feuerhahn
- *    
+ * Copyright 2010-13 Fraunhofer ISE
+ *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
- * 
+ *
  * jMBus is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * the Free Software Foundation, either version 2.1 of the License, or
  * (at your option) any later version.
- * 
+ *
  * jMBus is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
+Authors: Michael Zillgith & Stefan Feuerhahn
 
 jMBus is a Java library implementing an M-Bus (Meter-Bus) master.  It
 can be used to read metering data from M-Bus slaves such as gas,
@@ -47,7 +46,7 @@ Eclipse or you can compile and execute it in a terminal. To compile
 and execute the sample on Linux use something like this:
 go to the folder src/sample/java/
 >javac -cp "../../../build/libs/jmbus-<version>.jar" ReadMeter.java
->java -cp "../../../build/libs/jmbus-<version>.jar:../../../dependencies/rxtxcomm_api-2.1.7.jar:./" ReadMeter /dev/ttyUSB0 p1
+>java -cp "../../../build/libs/jmbus-<version>.jar:../../../dependencies/rxtxcomm_api-2.2pre2-11_bundle.jar:./" ReadMeter /dev/ttyUSB0 p1
 
 Note that jMBus depends on the Java Library RXTXcomm. This library in
 turn depends on librxtxSerial.so under Linux.

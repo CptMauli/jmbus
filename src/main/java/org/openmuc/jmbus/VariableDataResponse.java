@@ -1,36 +1,34 @@
-package org.openmuc.jmbus;
-
 /*
- * Copyright Fraunhofer ISE, 2010
- * Author(s): Michael Zillgith
- *            Stefan Feuerhahn
- *    
+ * Copyright 2010-13 Fraunhofer ISE
+ *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
- * 
+ *
  * jMBus is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * the Free Software Foundation, either version 2.1 of the License, or
  * (at your option) any later version.
- * 
+ *
  * jMBus is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
+package org.openmuc.jmbus;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Vector;
 
 /**
- * Representation of the RESP-UD message. Will be returned by
- * MBusASAP.readMeter().
+ * Representation of the RESP-UD message. Will be returned by MBusASAP.readMeter().
  * 
  * @author mzillgit
  */
@@ -107,6 +105,10 @@ public class VariableDataResponse {
 		return manufacturerData;
 	}
 
+	public boolean hasManufacturerData() {
+		return manufacturerData != null;
+	}
+
 	private void parseLongHeader(ByteBuffer buf) {
 
 		meterID[0] = buf.get();
@@ -128,7 +130,7 @@ public class VariableDataResponse {
 		// a maximum of 10 DIFEs are allowed in the spec
 		byte[] dib = new byte[11];
 		byte[] vib = new byte[11];
-		
+
 		Integer lvar = null;
 
 		int dataField;
@@ -138,17 +140,17 @@ public class VariableDataResponse {
 		while (buf.position() < buf.limit()) {
 
 			dib[0] = buf.get();
-			
+
 			int difPosition = buf.position();
-			
+
 			if (((dib[0] & 0xef) == 0x0f)) {
 				// Manufacturer specific data
 
-				/* eat up remaining buffer content */
-				if (buf.position() < buf.limit())
-					buf.get();
-
-				// TODO return data
+				ByteArrayOutputStream tmp = new ByteArrayOutputStream();
+				do {
+					tmp.write(buf.get());
+				} while (buf.position() < buf.limit());
+				manufacturerData = tmp.toByteArray();
 
 				return;
 			}
@@ -207,8 +209,8 @@ public class VariableDataResponse {
 				dataLength = 4;
 				break;
 			case 0x0d:
-				lvar = 0xff & (int) buf.get();
-				
+				lvar = 0xff & buf.get();
+
 				if (lvar < 0xc0) {
 					dataLength = lvar;
 				}
@@ -221,10 +223,11 @@ public class VariableDataResponse {
 				else if ((lvar >= 0xe0) && (lvar <= 0xef)) {
 					dataLength = lvar - 0xe0;
 				}
-				else if (lvar == 0xf8)
+				else if (lvar == 0xf8) {
 					dataLength = 4;
+				}
 				else {
-					throw new IOException("Unsupported LVAR Field: " + lvar + " at " + (buf.position() - 1));  
+					throw new IOException("Unsupported LVAR Field: " + lvar + " at " + (buf.position() - 1));
 				}
 				break;
 			case 0x0e:

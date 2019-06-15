@@ -3,22 +3,47 @@ apply plugin: 'eclipse'
 apply plugin: 'osgi'
 apply plugin: 'maven'
 
-version = '0.9.8'
+version = '0.10.0'
+group = 'org.openmuc'
 
-sourceCompatibility = 1.5
-targetCompatibility = 1.5
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
 
 repositories { mavenCentral() }
 
-jar {
-  manifest {
-    version = project.version
+dependencies {
+  testCompile group: 'junit', name: 'junit', version: '4.10'
+  compile files('dependencies/rxtxcomm_api-2.2pre2-11_bundle.jar')
+}
+
+uploadArchives {
+  repositories {
+    mavenDeployer {
+      repository(url: project.properties.repository) {
+        authentication(userName: project.properties.artifactoryUser, password: project.properties.artifactoryPass)
+      }
+      snapshotRepository(url: project.properties.snapshotRepository) {
+        authentication(userName: project.properties.artifactoryUser, password: project.properties.artifactoryPass)
+      }
+    }
   }
 }
 
-dependencies {
-  testCompile group: 'junit', name: 'junit', version: '4.+'
-  compile files('dependencies/rxtxcomm_api-2.1.7.jar')
+task sourcesJar(type: Jar, dependsOn:classes) {
+   classifier = 'sources'
+   from sourceSets.main.allSource
+}
+
+artifacts {
+   archives sourcesJar
+}
+
+jar {
+  manifest {
+    version = project.version.replace('-','.');
+    name = "jMBus"
+    instruction 'Export-Package', '!*.internal.*,*'
+  }
 }
 
 sourceSets {
