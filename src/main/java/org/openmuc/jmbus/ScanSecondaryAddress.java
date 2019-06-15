@@ -5,8 +5,6 @@
  */
 package org.openmuc.jmbus;
 
-import static javax.xml.bind.DatatypeConverter.printHexBinary;
-
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
@@ -45,7 +43,7 @@ class ScanSecondaryAddress {
         value[pos] = 0;
 
         while (!stop) {
-            String msg = MessageFormat.format("scan with wildcard: {0}", printHexBinary(toSendByteArray(value)));
+            String msg = MessageFormat.format("scan with wildcard: {0}", HexUtils.bytesToHex(toSendByteArray(value)));
             notifyScanMsg(secondaryAddressListener, msg);
 
             SecondaryAddress secondaryAddessesWildCard = SecondaryAddress.newFromLongHeader(toSendByteArray(value), 0);

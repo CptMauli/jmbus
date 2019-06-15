@@ -12,9 +12,8 @@ import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.Arrays;
 
-import javax.xml.bind.DatatypeConverter;
-
 import org.openmuc.jmbus.DecodingException;
+import org.openmuc.jmbus.HexUtils;
 import org.openmuc.jmbus.transportlayer.TransportLayer;
 
 /**
@@ -368,7 +367,7 @@ class WMBusConnectionImst extends AbstractWMBusConnection {
                     .append("\nFCS:           ")
                     .append(fCS)
                     .append("\nPayload:\n")
-                    .append(DatatypeConverter.printHexBinary(payload))
+                    .append(HexUtils.bytesToHex(payload))
                     .toString();
         }
 

@@ -25,7 +25,7 @@ public class DataRecordParserTest {
     @Test
     @Parameters({ "0704FFFFFFFFFFFFFFFF, -1", "07041223344556677812, 1330927310113874706" })
     public void decode1(String bytesStr, long expected) throws DecodingException {
-        byte[] bytes = Utils.hexStringToByteArray(bytesStr);
+        byte[] bytes = HexUtils.hexToBytes(bytesStr);
 
         long val = decodeAndGetVal(bytes);
 
@@ -44,8 +44,8 @@ public class DataRecordParserTest {
     }
 
     public Object testINT32Data() {
-        Object[] p1 = { Utils.hexStringToByteArray("0403e4050000"), 1508L };
-        Object[] p2 = { Utils.hexStringToByteArray("0403ffffffff"), -1L };
+        Object[] p1 = { HexUtils.hexToBytes("0403e4050000"), 1508L };
+        Object[] p2 = { HexUtils.hexToBytes("0403ffffffff"), -1L };
         return new Object[] { p1, p2 };
     }
 
@@ -109,7 +109,7 @@ public class DataRecordParserTest {
     @Parameters(method = "testDataRecordsValues")
     public void testDataRecords(String bytesStr, Description desc, DlmsUnit unit, int scaler, Long data)
             throws DecodingException {
-        byte[] bytes = Utils.hexStringToByteArray(bytesStr);
+        byte[] bytes = HexUtils.hexToBytes(bytesStr);
 
         DataRecord dataRecord = new DataRecord();
         dataRecord.decode(bytes, 0);

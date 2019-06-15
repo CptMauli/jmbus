@@ -68,7 +68,7 @@ public class WMBusMessage {
         }
 
         int controlField = buffer[1] & 0xff;
-        SecondaryAddress secondaryAddress = SecondaryAddress.newFromWMBusLlHeader(buffer, 2);
+        SecondaryAddress secondaryAddress = SecondaryAddress.newFromWMBusHeader(buffer, 2);
         VariableDataStructure vdr = new VariableDataStructure(buffer, 10, length - 9, secondaryAddress, keyMap);
 
         return new WMBusMessage(signalStrengthInDBm, buffer, controlField, secondaryAddress, vdr);

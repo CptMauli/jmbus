@@ -1,7 +1,6 @@
 package org.openmuc.jmbus.app;
 
-import static javax.xml.bind.DatatypeConverter.printHexBinary;
-
+import org.openmuc.jmbus.HexUtils;
 import org.openmuc.jmbus.internal.cli.FlagCliParameter;
 
 public class CliPrinter {
@@ -14,6 +13,24 @@ public class CliPrinter {
         this.printVerboseMsg = verbose;
     }
 
+    /**
+     * Print error message without usage printout
+     * 
+     * @param errMsg
+     *            error message to print
+     */
+    public void printError(String errMsg) {
+        printError(errMsg, false);
+    }
+
+    /**
+     * Print error message with optional usage printout
+     * 
+     * @param errMsg
+     *            error message to print
+     * @param printUsage
+     *            prints usage if true
+     */
     public void printError(String errMsg, boolean printUsage) {
         System.err.println("Error: " + errMsg + '\n');
         if (printUsage) {
@@ -40,7 +57,7 @@ public class CliPrinter {
         StringBuilder sb = new StringBuilder();
         for (Object message : msg) {
             if (message instanceof byte[]) {
-                sb.append(printHexBinary((byte[]) message));
+                sb.append(HexUtils.bytesToHex((byte[]) message));
             }
             else {
                 sb.append(message);

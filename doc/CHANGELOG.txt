@@ -1,3 +1,11 @@
+v3.2.1 14-Jun-2019
+------------------
+ - removed DatatypeConverter for Java 8+ compatibility
+ - fixed int16 negative value
+ - fixed day light saving time bug
+ - fixed typo in SecondaryAddress.newFromWMBusHeader
+ - adds long header parameter for SecondaryAddress.newFromManufactureId
+
 v3.2.0 12-Nov-2018
 ------------------
  - added reading M-Bus messages with wrong length field

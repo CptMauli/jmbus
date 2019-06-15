@@ -14,16 +14,16 @@ import org.junit.Test;
 import org.openmuc.jmbus.DataRecord;
 import org.openmuc.jmbus.DecodingException;
 import org.openmuc.jmbus.SecondaryAddress;
-import org.openmuc.jmbus.Utils;
+import org.openmuc.jmbus.HexUtils;
 
 public class DecryptionTest {
 
-    private final byte[] testFrameKamstrupEncrypted = Utils
-            .hexStringToByteArray("24442D2C692845631B168D3050209CD621B006B1140AEF4953AE5B86FAFC0B00E70705B84689");
+    private final byte[] testFrameKamstrupEncrypted = HexUtils
+            .hexToBytes("24442D2C692845631B168D3050209CD621B006B1140AEF4953AE5B86FAFC0B00E70705B84689");
 
     @Test
     public void testDecryption() throws Exception {
-        byte[] goodKey = Utils.hexStringToByteArray("4E5508544202058100DFEFA06B0934A5");
+        byte[] goodKey = HexUtils.hexToBytes("4E5508544202058100DFEFA06B0934A5");
 
         WMBusMessage wmBusDataMessage = decodewith(goodKey);
 
@@ -35,14 +35,14 @@ public class DecryptionTest {
 
     @Test(expected = DecodingException.class)
     public void testDecryptionWrongKey() throws Exception {
-        byte[] wrongKey = Utils.hexStringToByteArray("4E5508544202058100DFEFA06B0934AF");
+        byte[] wrongKey = HexUtils.hexToBytes("4E5508544202058100DFEFA06B0934AF");
 
         decodewith(wrongKey);
     }
 
     private WMBusMessage decodewith(byte[] key) throws DecodingException {
         Map<SecondaryAddress, byte[]> keyMap = new HashMap<>();
-        keyMap.put(SecondaryAddress.newFromWMBusLlHeader(testFrameKamstrupEncrypted, 2), key);
+        keyMap.put(SecondaryAddress.newFromWMBusHeader(testFrameKamstrupEncrypted, 2), key);
 
         WMBusMessage wmBusDataMessage = WMBusMessage.decode(testFrameKamstrupEncrypted, 0, keyMap);
         wmBusDataMessage.getVariableDataResponse().decode();

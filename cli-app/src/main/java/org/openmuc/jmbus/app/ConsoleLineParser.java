@@ -13,10 +13,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-import javax.xml.bind.DatatypeConverter;
-
 import org.openmuc.jmbus.MBusConnection;
 import org.openmuc.jmbus.SecondaryAddress;
+import org.openmuc.jmbus.HexUtils;
 import org.openmuc.jmbus.internal.cli.CliParameter;
 import org.openmuc.jmbus.internal.cli.CliParameterBuilder;
 import org.openmuc.jmbus.internal.cli.CliParseException;
@@ -44,7 +43,7 @@ class ConsoleLineParser {
 
     private static final int WILDCARD_MASK_LENGTH = 8;
 
-    private SecondaryAddress secondaryAddressValue;
+    private SecondaryAddress secondaryAddressValue = null;
     private int primaryAddressValue;
     private static byte[] difValue = {};
     private static byte[] vifValue = {};
@@ -69,7 +68,7 @@ class ConsoleLineParser {
 
     private final IntCliParameter baudRate = new CliParameterBuilder("-bd")
             .setDescription("Baud rate of the serial port.")
-            .buildIntParameter("baud_rate");
+            .buildIntParameter("baud_rate", 2400);
 
     private final StringCliParameter address = new CliParameterBuilder("-a").setDescription(
             "The primary address of the meter. Primary addresses range from 0 to 255. Regular primary address range from 1 to 250. \n\t    Or the secondary address of the meter. Secondary addresses are 8 bytes long and shall be entered in hexadecimal form (e.g. 3a453b4f4f343423)")
@@ -382,8 +381,7 @@ class ConsoleLineParser {
                         "The <secondary_address> has the wrong length. Should be 16 but is " + addrLength, true);
             }
             try {
-                secondaryAddressValue = SecondaryAddress.newFromLongHeader(DatatypeConverter.parseHexBinary(address),
-                        0);
+                secondaryAddressValue = SecondaryAddress.newFromLongHeader(HexUtils.hexToBytes(address), 0);
             } catch (NumberFormatException e) {
                 this.cliPrinter.printError("The <secondary_address> parameter contains non hexadecimal character.",
                         true);
@@ -451,9 +449,9 @@ class ConsoleLineParser {
 
     private void parseSecondaryAddress(String[] keyPair) {
         try {
-            byte[] secondaryAddressbytes = DatatypeConverter.parseHexBinary(keyPair[0]);
-            SecondaryAddress secondaryAddress = SecondaryAddress.newFromWMBusLlHeader(secondaryAddressbytes, 0);
-            keyPairValues.put(secondaryAddress, DatatypeConverter.parseHexBinary(keyPair[1]));
+            byte[] secondaryAddressbytes = HexUtils.hexToBytes(keyPair[0]);
+            SecondaryAddress secondaryAddress = SecondaryAddress.newFromWMBusHeader(secondaryAddressbytes, 0);
+            keyPairValues.put(secondaryAddress, HexUtils.hexToBytes(keyPair[1]));
         } catch (NumberFormatException e) {
             this.cliPrinter.printError("The secondary address is not hexadecimal.", true);
         } catch (IllegalArgumentException e) {
@@ -469,7 +467,7 @@ class ConsoleLineParser {
         }
         else {
             try {
-                ret = DatatypeConverter.parseHexBinary(input);
+                ret = HexUtils.hexToBytes(input);
             } catch (IllegalArgumentException e) {
                 String errMsg = MessageFormat.format("The <{0}> parameter contains non hexadecimal character.",
                         inputName);

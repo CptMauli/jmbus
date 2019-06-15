@@ -17,8 +17,6 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.xml.bind.DatatypeConverter;
-
 /**
  * Representation of the data transmitted in RESP-UD (M-Bus) and SND-NR (wM-Bus) messages.
  * 
@@ -458,7 +456,7 @@ public class VariableDataStructure {
             if (dataRecords.isEmpty()) {
                 int from = offset;
                 int to = from + length;
-                String hexString = DatatypeConverter.printHexBinary(Arrays.copyOfRange(buffer, from, to));
+                String hexString = HexUtils.bytesToHex(Arrays.copyOfRange(buffer, from, to));
                 return MessageFormat.format("VariableDataResponse has not been decoded. Bytes:\n{0}", hexString);
             }
             else {
@@ -486,7 +484,7 @@ public class VariableDataStructure {
         }
 
         if (manufacturerData.length != 0) {
-            String manDaraHexStr = DatatypeConverter.printHexBinary(manufacturerData);
+            String manDaraHexStr = HexUtils.bytesToHex(manufacturerData);
             builder.append("\nManufacturer specific bytes:\n").append(manDaraHexStr);
         }
 

@@ -7,8 +7,7 @@ package org.openmuc.jmbus.app;
 
 import java.text.MessageFormat;
 
-import javax.xml.bind.DatatypeConverter;
-
+import org.openmuc.jmbus.HexUtils;
 import org.openmuc.jmbus.VerboseMessage;
 import org.openmuc.jmbus.VerboseMessageListener;
 
@@ -23,7 +22,7 @@ class VerboseMessageListenerImpl implements VerboseMessageListener {
 
     @Override
     public void newVerboseMessage(VerboseMessage debugMessage) {
-        String data = DatatypeConverter.printHexBinary(debugMessage.getMessage());
+        String data = HexUtils.bytesToHex(debugMessage.getMessage());
         String dir = debugMessage.getMessageDirection().toString().toLowerCase();
         String msg = MessageFormat.format("{0} message: {1}", dir, data);
         this.cliPrinter.printlnDebug("<verbose> ", msg, " </verbose>");

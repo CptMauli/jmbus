@@ -45,6 +45,7 @@ public class MBusConnectionTest {
         Object[] p9 = { MessagesData.testMsg9, 29, 31, false };
         Object[] p10 = { MessagesData.testMsg10, 93, 22, true };
         Object[] p11 = { MessagesData.testMsg11, 11, 7, false };
+
         return new Object[] { p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11 };
     }
 
@@ -57,9 +58,15 @@ public class MBusConnectionTest {
         testMultiMessages(Arrays.asList(message), expectedAddressField, dataRecodsSizes, withException);
     }
 
-    // @Test
-    public void testParser6() throws IOException, DecodingException {
+    @Test
+    public void testParserMultiMessageABB() throws IOException, DecodingException {
         testMultiMessages(MessagesData.test_ABB_A41_messages, 9, MessagesData.test_ABB_A41_DataRecodSizes, false);
+    }
+
+    @Test
+    public void testParserMultiMessageSchneiderElectric() throws IOException, DecodingException {
+        testMultiMessages(MessagesData.test_Schneider_Electric_message, 93,
+                MessagesData.test_Schneider_Electric_DataRecodSizes, false);
     }
 
     @Test
@@ -90,6 +97,8 @@ public class MBusConnectionTest {
     private void testMultiMessages(List<byte[]> messages, int addressField, int[] dataRecodSizes, boolean withException)
             throws DecodingException, IOException {
         byte[] msg;
+
+        System.out.println("#########################################");
 
         for (int i = 0; i <= messages.size() - 1; i++) {
             msg = messages.get(i);

@@ -5,8 +5,6 @@
  */
 package org.openmuc.jmbus;
 
-import static javax.xml.bind.DatatypeConverter.printHexBinary;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -271,10 +269,12 @@ public class DataRecord {
             break;
         case 0x02: /* INT16 */
             if (dateTypeG) {
-                int day = (0x1f) & buffer[i];
-                int year1 = ((0xe0) & buffer[i++]) >> 5;
-                int month = (0x0f) & buffer[i];
-                int year2 = ((0xf0) & buffer[i++]) >> 1;
+                int day = (0x1f) & buffer[i]; // Byte 1; Bit 1-5
+                int year1 = ((0xe0) & buffer[i++]) >> 5; // Byte 1: Bit 6-8
+
+                int month = (0x0f) & buffer[i]; // Byte 2: Bit 9-12
+                int year2 = ((0xf0) & buffer[i++]) >> 1; // Byte 2: Bit 13-16
+
                 int year = (2000 + year1 + year2);
 
                 Calendar calendar = Calendar.getInstance();
@@ -283,6 +283,11 @@ public class DataRecord {
 
                 dataValue = calendar.getTime();
                 dataValueType = DataValueType.DATE;
+            }
+            else if ((buffer[i + 1] & 0x80) == 0x80) {
+                // negative
+                dataValue = Long.valueOf((buffer[i++] & 0xff) | ((buffer[i++] & 0xff) << 8) | 0xffff << 16);
+                dataValueType = DataValueType.LONG;
             }
             else {
                 dataValue = Long.valueOf((buffer[i++] & 0xff) | ((buffer[i++] & 0xff) << 8));
@@ -303,13 +308,18 @@ public class DataRecord {
             break;
         case 0x04: /* INT32 */
             if (dateTypeF) {
-                int min = (buffer[i++] & 0x3f);
-                int hour = (buffer[i] & 0x1f);
-                int yearh = (0x60 & buffer[i++]) >> 5;
-                int day = (buffer[i] & 0x1f);
-                int year1 = (0xe0 & buffer[i++]) >> 5;
-                int mon = (buffer[i] & 0x0f);
-                int year2 = (0xf0 & buffer[i++]) >> 1;
+                Calendar calendar = Calendar.getInstance();
+                int min = (buffer[i++] & 0x3f); // Byte 1: Bit 1-6
+
+                int hour = (buffer[i] & 0x1f); // Byte 2: Bit 9-13
+                int yearh = (0x60 & buffer[i]) >> 5; // Byte 2: Bit 14-15
+                int dst = (0x80 & buffer[i++]) >> 7; // Byte 2: Bit 16
+
+                int day = (buffer[i] & 0x1f); // Byte 3: Bit 17-21
+                int year1 = (0xe0 & buffer[i++]) >> 5; // Byte 3: Bit 22-24
+
+                int mon = (buffer[i] & 0x0f); // Byte 4: Bit 25-28
+                int year2 = (0xf0 & buffer[i++]) >> 1; // Byte 4: Bit 29-32
 
                 if (yearh == 0) {
                     yearh = 1;
@@ -317,9 +327,11 @@ public class DataRecord {
 
                 int year = 1900 + 100 * yearh + year1 + year2;
 
-                Calendar calendar = Calendar.getInstance();
-
                 calendar.set(year, mon - 1, day, hour, min, 0);
+
+                if (dst == 1) {
+                    calendar.set(Calendar.DST_OFFSET, 60000);
+                }
 
                 dataValue = calendar.getTime();
                 dataValueType = DataValueType.DATE;
@@ -396,11 +408,6 @@ public class DataRecord {
             else {
                 throw new DecodingException("Unsupported LVAR Field: " + variableLength);
             }
-
-            // TODO check this:
-            // if (variableLength >= 0xc0) {
-            // throw new DecodingException("Variable length (LVAR) field >= 0xc0: " + variableLength);
-            // }
 
             byte[] rawData = new byte[dataLength0x0d];
 
@@ -1438,9 +1445,9 @@ public class DataRecord {
     public String toString() {
 
         StringBuilder builder = new StringBuilder().append("DIB:")
-                .append(printHexBinary(dib))
+                .append(HexUtils.bytesToHex(dib))
                 .append(", VIB:")
-                .append(printHexBinary(vib))
+                .append(HexUtils.bytesToHex(vib))
                 .append(" -> descr:")
                 .append(description);
 

@@ -16,7 +16,7 @@ import org.openmuc.jmbus.DataRecord.Description;
 import org.openmuc.jmbus.DecodingException;
 import org.openmuc.jmbus.DeviceType;
 import org.openmuc.jmbus.SecondaryAddress;
-import org.openmuc.jmbus.Utils;
+import org.openmuc.jmbus.HexUtils;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -38,7 +38,7 @@ public class MagneticSensorTest {
     @Parameters(method = "testMagneticSensorData")
     public void testMagneticSensor(String lexicalXSDHexBinary, int expectedNumOfRec, double expectedScaledVal,
             Description expectedDesc) throws DecodingException {
-        byte[] sensorPacket = Utils.hexStringToByteArray(lexicalXSDHexBinary);
+        byte[] sensorPacket = HexUtils.hexToBytes(lexicalXSDHexBinary);
         WMBusMessage wmBusDataMessage = WMBusMessage.decode(sensorPacket, 0, new HashMap<SecondaryAddress, byte[]>());
         wmBusDataMessage.getVariableDataResponse().decode();
 

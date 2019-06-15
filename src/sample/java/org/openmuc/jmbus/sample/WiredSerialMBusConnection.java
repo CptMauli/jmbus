@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.openmuc.jmbus.MBusConnection;
 import org.openmuc.jmbus.MBusConnection.MBusSerialBuilder;
 
-public class WiredMBusConnection {
+public class WiredSerialMBusConnection {
 
     public static void newConnection() throws IOException {
         // tag::todoc[]
@@ -16,13 +16,13 @@ public class WiredMBusConnection {
         // end::todoc[]
     }
 
-    @SuppressWarnings("unused")
     public static void read() throws IOException {
         MBusSerialBuilder builder = MBusConnection.newSerialBuilder("/dev/ttyS0").setBaudrate(2400);
         try (MBusConnection mBusConnection = builder.build()) {
             // tag::readtodoc[]
             int primaryAddress = 1;
             mBusConnection.read(primaryAddress);
+            // end::readtodoc[]
         }
     }
 

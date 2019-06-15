@@ -1,7 +1,7 @@
 
 project.ext {
 
-  cfgVersion = "3.2.0"
+  cfgVersion = "3.2.1"
   
   cfgGroup = "org.openmuc"
 
@@ -123,4 +123,3 @@ uploadArchives {
     }
   }
 }
-

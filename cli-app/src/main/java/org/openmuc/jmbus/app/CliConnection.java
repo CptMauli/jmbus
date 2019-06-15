@@ -21,16 +21,13 @@ import org.openmuc.jrxtx.SerialPortTimeoutException;
 class CliConnection {
 
     private static void printWriteExample() {
-        System.out.println("Example for writing to a meter:");
-        System.out.println(
-                "\tChange primary address: org.openmuc.jmbus.app.JmbusApp -w -sp /dev/ttyUSB0 -a <old_primary_address> -dif 01 -vif 7a -data <data_new_primary_address>");
-        System.out.println(
-                "\tChange primary address from 20 to 26: org.openmuc.jmbus.app.JmbusApp -w  -sb /dev/ttyUSB0 -a 20 -dif 01 -vif 7a -data 1a");
-        System.out.println(
-                "\tSet primary address with secondary address: org.openmuc.jmbus.app.JmbusApp /dev/ttyUSB0 -a <secondary_address> -dif 01  -vif 7a -data <data_primary_address>");
-        System.out.println(
-                "\tSet primary address to 47 (0x2f) with secondary address 3a453b4f4f343423: org.openmuc.jmbus.app.JmbusApp -sb /dev/ttyUSB0 -a 3a453b4f4f343423 -dif 01 -vif 7a -data 2f");
-        System.out.println("\n\n");
+        System.out.println("Example for writing to a meter: \n"
+                + "\tChange primary address: ./jmbus-app.sh write -cp /dev/ttyUSB0 -a <old_primary_address> -dif 01 -vif 7a -data <data_new_primary_address>\n"
+                + "\tExample:\n"
+                + "\t\tChange primary address from 20 to 26: ./jmbus-app.sh write -cp /dev/ttyUSB0 -a 20 -dif 01 -vif 7a -data 1a\n\n"
+                + "\tSet primary address with secondary address: ./jmbus-app.sh write -cp /dev/ttyUSB0 -a <secondary_address> -dif 01  -vif 7a -data <data_primary_address>\n"
+                + "\tExample:\n"
+                + "\t\tSet primary address to 47 (0x2f) with secondary address 3a453b4f4f343423: ./jmbus-app.sh write -cp /dev/ttyUSB0 -a 3a453b4f4f343423 -dif 01 -vif 7a -data 2f\n\n");
     }
 
     public static void write(ConsoleLineParser cliParser, MBusConnection mBusConnection, CliPrinter cliPrinter) {
@@ -54,10 +51,10 @@ class CliConnection {
                 mBusConnection.selectComponent(secondaryAddress);
             } catch (SerialPortTimeoutException e) {
                 mBusConnection.close();
-                cliPrinter.printError("Selecting secondary address attempt timed out.", false);
+                cliPrinter.printError("Selecting secondary address attempt timed out.");
             } catch (IOException e) {
                 mBusConnection.close();
-                cliPrinter.printError("Error selecting secondary address: " + e.getMessage(), false);
+                cliPrinter.printError("Error selecting secondary address: " + e.getMessage());
             }
             primaryAddress = 0xfd;
         }
@@ -69,10 +66,10 @@ class CliConnection {
             cliPrinter.printInfo("Data was sent.");
         } catch (SerialPortTimeoutException e) {
             mBusConnection.close();
-            cliPrinter.printError("Write attempt timed out.", false);
+            cliPrinter.printError("Write attempt timed out.");
         } catch (IOException e) {
             mBusConnection.close();
-            cliPrinter.printError("Error writing meter: " + e.getMessage(), false);
+            cliPrinter.printError("Error writing meter: " + e.getMessage());
         }
 
         System.out.println();
@@ -95,10 +92,10 @@ class CliConnection {
                 mBusConnection.selectComponent(secondaryAddress);
             } catch (SerialPortTimeoutException e) {
                 mBusConnection.close();
-                cliPrinter.printError("Selecting secondary address attempt timed out.", false);
+                cliPrinter.printError("Selecting secondary address attempt timed out.");
             } catch (IOException e) {
                 mBusConnection.close();
-                cliPrinter.printError("Error selecting secondary address: " + e.getMessage(), false);
+                cliPrinter.printError("Error selecting secondary address: " + e.getMessage());
             }
             primaryAddress = 0xfd;
         }
@@ -108,15 +105,15 @@ class CliConnection {
                     mBusConnection.linkReset(primaryAddress);
                 } catch (InterruptedIOException e) {
                     mBusConnection.close();
-                    cliPrinter.printError("Resetting link (SND_NKE) attempt timed out.", false);
+                    cliPrinter.printError("Resetting link (SND_NKE) attempt timed out.");
                 } catch (IOException e) {
                     mBusConnection.close();
-                    cliPrinter.printError("Error resetting link (SND_NKE): " + e.getMessage(), false);
+                    cliPrinter.printError("Error resetting link (SND_NKE): " + e.getMessage());
                 }
                 try {
                     Thread.sleep(100); // for slow slaves
                 } catch (InterruptedException e) {
-                    cliPrinter.printError("Thread sleep fails.\n" + e.getMessage(), false);
+                    cliPrinter.printError("Thread sleep fails.\n" + e.getMessage());
                 }
             }
         }
@@ -125,10 +122,10 @@ class CliConnection {
                 mBusConnection.selectForReadout(primaryAddress, dataRecordsToSelectForReadout);
             } catch (InterruptedIOException e) {
                 mBusConnection.close();
-                cliPrinter.printError("Selecting data record for readout timed out.", false);
+                cliPrinter.printError("Selecting data record for readout timed out.");
             } catch (IOException e) {
                 mBusConnection.close();
-                cliPrinter.printError("Error selecting data record for readout: " + e.getMessage(), false);
+                cliPrinter.printError("Error selecting data record for readout: " + e.getMessage());
             }
         }
 
@@ -137,19 +134,19 @@ class CliConnection {
                 variableDataStructure = mBusConnection.read(primaryAddress);
             } catch (InterruptedIOException e) {
                 mBusConnection.close();
-                cliPrinter.printError("Read attempt timed out.", false);
+                cliPrinter.printError("Read attempt timed out.");
             } catch (IOException e) {
                 mBusConnection.close();
-                cliPrinter.printError(e.getMessage(), false);
+                cliPrinter.printError(e.getMessage());
             }
 
             if (!dataRecordsToSelectForReadout.isEmpty()) {
                 try {
                     mBusConnection.resetReadout(primaryAddress);
                 } catch (InterruptedIOException e) {
-                    cliPrinter.printError("Resetting meter for standard readout timed out.", false);
+                    cliPrinter.printError("Resetting meter for standard readout timed out.");
                 } catch (IOException e) {
-                    cliPrinter.printError("Error resetting meter for standard readout: " + e.getMessage(), false);
+                    cliPrinter.printError("Error resetting meter for standard readout: " + e.getMessage());
                 }
             }
 

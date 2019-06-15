@@ -30,16 +30,23 @@ image::box.jpg[mbus box wiring,400]
 === Wired M-Bus
 
 The first thing to do in order to communicate with a M-Bus device is to establish
-a new connection.
+a new connection. You can build a TCP or a serial connection.
 
 :jmbusPackage: org/openmuc/jmbus
 
-:wiredSample: {sampleSrc}/{jmbusPackage}/sample/WiredMBusConnection.java
+:wiredSerialSample: {sampleSrc}/{jmbusPackage}/sample/WiredSerialMBusConnection.java
+:wiredTcpSample: {sampleSrc}/{jmbusPackage}/sample/WiredTcpMBusConnection.java
 
 [source,java]
-.Opening a new M-Bus connection.
+.Opening a new M-Bus serial connection.
 ----
-include::{wiredSample}[tags=todoc,indent=0]
+include::{wiredSerialSample}[tags=todoc,indent=0]
+----
+
+[source,java]
+.Opening a new M-Bus TCP connection.
+----
+include::{wiredTcpSample}[tags=todoc,indent=0]
 ----
 
 Once the connection has been successfully established it can be used to 
@@ -51,7 +58,7 @@ response is returned by the read function.
 [source,java]
 .Read from Device.
 ----
-include::{wiredSample}[tags=readtodoc,indent=0]
+include::{wiredSerialSample}[tags=readtodoc,indent=0]
 ----
 
 Next the variable data structure can be parsed as explained below.
@@ -63,7 +70,7 @@ This write command will change the primary address from `5` to `9`.
 [source,java]
 .Write to Device.
 ----
-include::{wiredSample}[tags=writetodoc,indent=0]
+include::{wiredSerialSample}[tags=writetodoc,indent=0]
 ----
 
 Try the CLI APP described in <<cli_app>>.

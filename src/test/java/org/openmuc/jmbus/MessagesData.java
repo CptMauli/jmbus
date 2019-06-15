@@ -115,12 +115,12 @@ public class MessagesData {
             (byte) 0x16 };
 
     /** STV Automation, Bialon impulse counter */
-    static final byte[] testMsg8 = Utils.hexStringToByteArray("6851516808007204000054964EC80F010000000600A50A0000000"
+    static final byte[] testMsg8 = HexUtils.hexToBytes("6851516808007204000054964EC80F010000000600A50A0000000"
             + "0032800000005FE280000803F0600A10000000000032800000005FE280000803F0600030000000000032800000005FE280000"
             + "803F03FD24580200B016");
 
     /** Kamstrup Electricity Meter */
-    static final byte[] testMsg9 = Utils.hexStringToByteArray("68F9F968081D72295797102D2C18020740000004843BB2FA72000"
+    static final byte[] testMsg9 = HexUtils.hexToBytes("68F9F968081D72295797102D2C18020740000004843BB2FA72000"
             + "4843C0000000004FB823B0000000004FB823C0000000004FFF763FCCA7D0404FFF764000000008410843BB2FA72008420843B"
             + "0000000014AB3BEF3D000014AB3C0000000014FFF7B43B0000000014FFF7B43C0000000004FBFB3B1A990A0004AB3BAA14000"
             + "00C79295797100C7856095419066D43058D49180006FFF7B93B401E894918009410AB3BEF3D00008610FFF7B93B401E894918"
@@ -128,12 +128,17 @@ public class MessagesData {
             + "202FFF74E1D0502FFF74F5D0302FFF750C30502FFF7518B0BD116");
 
     /** Schneider Electric iEM3275 Electricity Meter (exception, missing bytes) */
-    static final byte[] testMsg10 = Utils.hexStringToByteArray("68F6F668085D7246201434A34C15027A0000000783FFFF091623"
+    static final byte[] testMsg10 = HexUtils.hexToBytes("68F6F668085D7246201434A34C15027A0000000783FFFF091623"
             + "09000000000087400372BB010200000000874083FFFF091CE566010000000004EDFFFF0C000001010783FFFF0D59CA9A04000"
             + "00000874083FFFF0D72BB0102000000000783FFFF01B9069201000000000783FFFF020D076601000000000783FFFF0394589F"
             + "010000000004EDFFFF0E0000010107FD61000000000000000003FFFF100000008710030000000000000000872003000000000"
             + "00000008730030000000000000000878010030000000000000000046D160E4F2A03FFFF2C64000003FFFF2D00000005FFFF2E"
             + "0000C84205FFFF2F0000FA4303FFFF3000000003FD1B0000");
+
+    /** Cyble Mbus V1.4 */
+    static final byte[] testMsg11 = HexUtils.hexToBytes("68565668080B725646001077041403DB1000000C78564600100D"
+            + "7C084449202E747375630A20203434333238323330046D0E0F502A027C09656D6974202E746162B20404158F04000004957F0"
+            + "00000004415180000000F00031FAD16");
 
     static final byte[] testMsg12 = { 104, -12, -12, 104, 8, 94, 114, -124, 48, 57, 4, -93, 76, 22, 2, 33, 0, 0, 0, 13,
             -3, 10, 18, 99, 105, 114, 116, 99, 101, 108, 69, 32, 114, 101, 100, 105, 101, 110, 104, 99, 83, 13, -3, 12,
@@ -146,12 +151,7 @@ public class MessagesData {
             2, -120, 1, 18, 62, 5, -82, -1, -1, 3, 19, 87, -103, 61, 5, 46, 69, -93, 79, 63, -123, 64, 46, 100, 108, 0,
             -65, -123, -128, 64, 46, -72, 36, 116, 63, 5, -1, -1, 10, -94, 35, -109, 63, 5, -1, -1, 11 };
 
-    /** Cyble Mbus V1.4 */
-    static final byte[] testMsg11 = Utils.hexStringToByteArray("68565668080B725646001077041403DB1000000C78564600100D"
-            + "7C084449202E747375630A20203434333238323330046D0E0F502A027C09656D6974202E746162B20404158F04000004957F0"
-            + "00000004415180000000F00031FAD16");
-
-    /* ABB A41 513-100 electric meter Message 1 */
+    /** ABB A41 513-100 electric meter Message 1 */
     static final byte[] test_ABB_A41_Msg1 = new byte[] { (byte) 0x68, (byte) 0xf6, (byte) 0xf6, (byte) 0x68,
             (byte) 0x08, (byte) 0x09, (byte) 0x72, (byte) 0x19, (byte) 0x78, (byte) 0x21, (byte) 0x00, (byte) 0x42,
             (byte) 0x04, (byte) 0x20, (byte) 0x02, (byte) 0x0b, (byte) 0x10, (byte) 0x00, (byte) 0x00, (byte) 0x0e,
@@ -185,7 +185,7 @@ public class MessagesData {
             (byte) 0x00, (byte) 0x0b, (byte) 0x30, (byte) 0x30, (byte) 0x31, (byte) 0x2d, (byte) 0x33, (byte) 0x31,
             (byte) 0x35, (byte) 0x20, (byte) 0x31, (byte) 0x34, (byte) 0x41, (byte) 0x1f, (byte) 0xf1, (byte) 0x16 };
 
-    /* ABB A41 513-100 electric meter Message 2 */
+    /** ABB A41 513-100 electric meter Message 2 */
     static final byte[] test_ABB_A41_Msg2 = new byte[] { (byte) 0x68, (byte) 0xea, (byte) 0xea, (byte) 0x68,
             (byte) 0x08, (byte) 0x09, (byte) 0x72, (byte) 0x19, (byte) 0x78, (byte) 0x21, (byte) 0x00, (byte) 0x42,
             (byte) 0x04, (byte) 0x20, (byte) 0x02, (byte) 0x0c, (byte) 0x10, (byte) 0x00, (byte) 0x00, (byte) 0x04,
@@ -218,7 +218,7 @@ public class MessagesData {
             (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x01, (byte) 0xff, (byte) 0xad, (byte) 0x00,
             (byte) 0x01, (byte) 0x1f, (byte) 0x85, (byte) 0x16 };
 
-    /* ABB A41 513-100 electric meter Message 3 */
+    /** ABB A41 513-100 electric meter Message 3 */
     static final byte[] test_ABB_A41_Msg3 = new byte[] { (byte) 0x68, (byte) 0x94, (byte) 0x94, (byte) 0x68,
             (byte) 0x08, (byte) 0x09, (byte) 0x72, (byte) 0x19, (byte) 0x78, (byte) 0x21, (byte) 0x00, (byte) 0x42,
             (byte) 0x04, (byte) 0x20, (byte) 0x02, (byte) 0x0d, (byte) 0x10, (byte) 0x00, (byte) 0x00, (byte) 0x81,
@@ -240,7 +240,7 @@ public class MessagesData {
             (byte) 0x80, (byte) 0x40, (byte) 0xfd, (byte) 0xe1, (byte) 0x00, (byte) 0x01, (byte) 0x00, (byte) 0x00,
             (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x1f, (byte) 0x35, (byte) 0x16 };
 
-    /* ABB A41 513-100 electric meter Message 4 */
+    /** ABB A41 513-100 electric meter Message 4 */
     static final byte[] test_ABB_A41_Msg4 = new byte[] { (byte) 0x68, (byte) 0xcf, (byte) 0xcf, (byte) 0x68,
             (byte) 0x08, (byte) 0x09, (byte) 0x72, (byte) 0x19, (byte) 0x78, (byte) 0x21, (byte) 0x00, (byte) 0x42,
             (byte) 0x04, (byte) 0x20, (byte) 0x02, (byte) 0x0e, (byte) 0x10, (byte) 0x00, (byte) 0x00, (byte) 0x0e,
@@ -270,7 +270,7 @@ public class MessagesData {
             (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x1f, (byte) 0x53,
             (byte) 0x16 };
 
-    /* ABB A41 513-100 electric meter Message 5 */
+    /** ABB A41 513-100 electric meter Message 5 */
     static final byte[] test_ABB_A41_Msg5 = new byte[] { (byte) 0x68, (byte) 0xc8, (byte) 0xc8, (byte) 0x68,
             (byte) 0x08, (byte) 0x09, (byte) 0x72, (byte) 0x19, (byte) 0x78, (byte) 0x21, (byte) 0x00, (byte) 0x42,
             (byte) 0x04, (byte) 0x20, (byte) 0x02, (byte) 0x0f, (byte) 0x10, (byte) 0x00, (byte) 0x00, (byte) 0x4e,
@@ -299,7 +299,38 @@ public class MessagesData {
             (byte) 0x00, (byte) 0x01, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x0f,
             (byte) 0x9f, (byte) 0x16 };
 
+    /** ABB A41 513-100 electric meter all messages */
     static final ArrayList<byte[]> test_ABB_A41_messages = new ArrayList<>(Arrays.asList(test_ABB_A41_Msg1,
             test_ABB_A41_Msg2, test_ABB_A41_Msg3, test_ABB_A41_Msg4, test_ABB_A41_Msg5));
     static final int[] test_ABB_A41_DataRecodSizes = { 23, 24, 16, 17, 17 };
+
+    /** Schneider Electric electricity meter message 1 */
+    static final byte[] test_Schneider_Electric_Msg1 = HexUtils.hexToBytes("68F4F468085D7246201434A34C1502"
+            + "5D0000000DFD0A126369727463656C452072656469656E6863530DFD0C0820353332334D45690DFD0E073730302E332E31"
+            + "03FD1700000005FDDCFF01DE97554205FDDCFF02367C364205FDDCFF03F261544205FDDCFF0003D24A4205FDC9FF058823"
+            + "C84305FDC9FF06FF20C94305FDC9FF076B38C94305FDC9FF0851D4C84305FDC9FF0176D3674305FDC9FF028B31674305FD"
+            + "C9FF0335AE684305FDC9FF0467E6674305AEFF0117C9384105AEFF027E4D204105AEFF0314DB3E41052E6AFC054285402E"
+            + "82802F418580402EA5FC0C4205FF0ABF49733F05FF0BDAF4474207034FADE804000000001F8216");
+
+    /** Schneider Electric electricity meter message 2 */
+    static final byte[] test_Schneider_Electric_Msg2 = HexUtils.hexToBytes("68F6F668085D7246201434A34C1502"
+            + "5E0000000783FF098D83090000000000874003E316230200000000874083FF09237D7D010000000004EDFF0C0000010107"
+            + "83FF0D58ADE80400000000874083FF0DE3162302000000000783FF017262AC01000000000783FF0268787D010000000007"
+            + "83FF03353ABB010000000004EDFF0E0000010107FD61000000000000000003FF1000000087100300000000000000008720"
+            + "0300000000000000008730030000000000000000878010030000000000000000046D250A4E2B03FF2C64000003FF2D0000"
+            + "0005FF2E0000C84205FF2F0000FA4303FF3000000003FD1B00000002FF32000003FD1AFFFF001F5C16");
+
+    /** Schneider Electric electricity meter message 3 */
+    static final byte[] test_Schneider_Electric_Msg3 = HexUtils.hexToBytes("68F1F168085D7246201434A34C1502"
+            + "5F00000002FF34000005FF350000803F02FF36000002FF37000002FF38000004EDFF390000010105FF3A0000C0FF06FF20"
+            + "B1589002000003FF2103000003FF2204000003FF230B000003FF243200000503CFDAA0470583FF0910E01B448540030F0E"
+            + "0C47854083FF098152C3460583FF0DCFDAA047854083FF0D0F0E0C470583FF013D55DB460583FF021950C3460583FF03B8"
+            + "EEE24605FD6100000000851003000000008520030000000085300300000000858010030000000003FF2500000005FF2600"
+            + "00C84203FF2764000003FF2803000003FF29FA000003FF2A05000003FF2B0000000FE816");
+
+    /** Schneider Electric electricity meter all messages */
+    static final ArrayList<byte[]> test_Schneider_Electric_message = new ArrayList<>(
+            Arrays.asList(test_Schneider_Electric_Msg1, test_Schneider_Electric_Msg2, test_Schneider_Electric_Msg3));
+    static final int[] test_Schneider_Electric_DataRecodSizes = { 25, 25, 33 };
+
 }
