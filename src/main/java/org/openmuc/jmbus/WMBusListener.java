@@ -18,8 +18,21 @@
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+package org.openmuc.jmbus;
 
-Authors: Stefan Feuerhahn & Michael Zillgith
+import java.io.IOException;
 
-For documentation take a look at the user guide in the doc/userguide
-folder of the distribution or online at http://www.openmuc.org.
+/**
+ * 
+ * @author Stefan Feuerhahn
+ *
+ */
+public interface WMBusListener {
+
+	public void newMessage(WMBusDataMessage message);
+
+	public void discardedBytes(byte[] bytes);
+
+	public void stoppedListening(IOException e);
+
+}

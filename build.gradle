@@ -4,7 +4,7 @@ apply plugin: 'osgi'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-version = '1.3'
+version = '2.0.0'
 group = 'org.openmuc'
 def projectName = 'jMBus'
 def projectNameLowerCase = 'jmbus'
@@ -42,13 +42,13 @@ uploadArchives {
       pom.project {
 	name projectName
 	packaging 'jar'
-	description 'jMBus is a library that can be used to implement an M-Bus master that reads meters.'
+	description 'jMBus is a library that can be used to implement M-Bus masters or wireless M-Bus receivers that read meters.'
 	url 'http://www.openmuc.org/'
 
 	licenses {
 	  license {
-	    name 'GNU Lesser General Public License'
-	    url 'http://www.gnu.org/licenses/lgpl-2.1.html'
+	    name 'GNU General Public License'
+	    url 'http://www.gnu.org/copyleft/gpl-3.0.html'
 	    distribution 'repo'
 	  }
 	}
@@ -136,16 +136,16 @@ task (tar, type: Tar) {
 
   into(project.archivesBaseName) {
     from('./') {
-      include 'doc/*.txt'
-      include 'doc/userguide/' + projectNameLowerCase + '-doc.html'
-      include 'doc/userguide/graphics/**'
+      include 'build.gradle'
       include 'licenses/**'
+      include 'doc/*.txt'
+      include 'doc/userguide/' + projectNameLowerCase + '-doc*.html'
+      include 'doc/userguide/' + projectNameLowerCase + '-doc_img/**'
       include 'build/libsdeps/**'
       include 'build/javadoc/**'
-      include 'build.gradle'
       include 'dependencies/**'
       include 'src/**'
-      include 'runscripts/**'
+      include 'run-scripts/**'
     }
   }
 }

@@ -5,64 +5,76 @@
  * For more information visit http://www.openmuc.org
  *
  * jMBus is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 2.1 of the License, or
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * jMBus is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU General Public License
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 package org.openmuc.jmbus;
 
-import gnu.io.CommPort;
-import gnu.io.CommPortIdentifier;
-import gnu.io.NoSuchPortException;
-import gnu.io.PortInUseException;
 import gnu.io.SerialPort;
-import gnu.io.UnsupportedCommOperationException;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.concurrent.TimeoutException;
 
-import org.openmuc.jmbus.internal.MBusLPdu;
-
 /**
- * M-Bus Application Layer Service Access Point
+ * M-Bus Application Layer Service Access Point - Use this access point to communicate using the M-Bus wired protocol.
  * 
  * @author Stefan Feuerhahn
  * 
  */
 public class MBusSap {
 
-	private final String serialPortName;
-	private SerialPort serialPort;
-
-	private DataOutputStream os;
-	private DataInputStream is;
+	private final SerialTransceiver serialTransceiver;
 
 	private final byte[] outputBuffer = new byte[1000];
 	private final byte[] inputBuffer = new byte[1000];
+
+	private DataOutputStream os;
+	private DataInputStream is;
 
 	private int timeout = 5000;
 
 	/**
 	 * Creates an M-Bus Service Access Point that is used to read meters.
 	 * 
-	 * @param serialPort
+	 * @param serialPortName
 	 *            examples for serial port identifiers are on Linux "/dev/ttyS0" or "/dev/ttyUSB0" and on Windows "COM1"
+	 * @param baudRate
+	 *            the baud rate to use.
 	 */
-	public MBusSap(String serialPort) {
-		serialPortName = serialPort;
+	public MBusSap(String serialPortName, int baudRate) {
+		serialTransceiver = new SerialTransceiver(serialPortName, baudRate, SerialPort.DATABITS_8,
+				SerialPort.STOPBITS_1, SerialPort.PARITY_EVEN);
+	}
+
+	/**
+	 * Opens the serial port. The serial port needs to be opened before attempting to read a device.
+	 * 
+	 * @throws IOException
+	 *             if any kind of error occurs opening the serial port.
+	 */
+	public void open() throws IOException {
+		serialTransceiver.open();
+		os = serialTransceiver.getOutputStream();
+		is = serialTransceiver.getInputStream();
+	}
+
+	/**
+	 * Closes the serial port.
+	 */
+	public void close() {
+		serialTransceiver.close();
 	}
 
 	/**
@@ -86,109 +98,49 @@ public class MBusSap {
 	}
 
 	/**
-	 * Opens the serial port. The serial port needs to be opened befor attempting to read a device.
+	 * Reads a meter using primary addressing. Sends a data request (REQ_UD2) to the remote device and returns the
+	 * variable data structure from the received RSP_UD frame.
 	 * 
-	 * @param initialBaudRate
-	 * @throws IOException
-	 *             if any kind of error occurs opening the serial port.
-	 */
-	public void open(int initialBaudRate) throws IOException {
-		CommPortIdentifier portIdentifier;
-		try {
-			portIdentifier = CommPortIdentifier.getPortIdentifier(serialPortName);
-		} catch (NoSuchPortException e) {
-			throw new IOException("Serial port with given name does not exist", e);
-		}
-
-		if (portIdentifier.isCurrentlyOwned()) {
-			throw new IOException("Serial port is currently in use.");
-		}
-
-		CommPort commPort;
-		try {
-			commPort = portIdentifier.open(this.getClass().getName(), 2000);
-		} catch (PortInUseException e) {
-			throw new IOException("Serial port is currently in use.", e);
-		}
-
-		if (!(commPort instanceof SerialPort)) {
-			commPort.close();
-			throw new IOException("The specified CommPort is not a serial port");
-		}
-
-		serialPort = (SerialPort) commPort;
-
-		try {
-			serialPort.setSerialPortParams(initialBaudRate, SerialPort.DATABITS_8, SerialPort.STOPBITS_1,
-					SerialPort.PARITY_EVEN);
-		} catch (UnsupportedCommOperationException e) {
-			serialPort.close();
-			serialPort = null;
-			throw new IOException("Unable to set the baud rate or other serial port parameters", e);
-		}
-
-		try {
-			os = new DataOutputStream(serialPort.getOutputStream());
-			is = new DataInputStream(serialPort.getInputStream());
-		} catch (IOException e) {
-			serialPort.close();
-			serialPort = null;
-			throw new IOException("Error getting input or output or input stream from serial port", e);
-		}
-
-	}
-
-	/**
-	 * Closes the serial port.
-	 */
-	public void close() {
-		if (serialPort == null) {
-			return;
-		}
-		serialPort.close();
-		serialPort = null;
-	}
-
-	/**
-	 * Sends a data request (REQ_UD2) to the remote device and returns the Variable Data Response received.
-	 * 
-	 * @param meterAddress
-	 *            e.g. p1 or s...
-	 * @return the data response from the meter.
+	 * @param primaryAddress
+	 *            the address of the meter to read.
+	 * @return the variable data structure from the received RSP_UD frame
 	 * @throws IOException
 	 *             if any kind of error (including timeout) occurs while trying to read the remote device. Note that the
 	 *             connection is not closed when an IOException is thrown.
 	 * @throws TimeoutException
 	 *             if no response at all (not even a single byte) was received from the meter within the timeout span.
 	 */
-	public VariableDataResponse read(String meterAddress) throws IOException, TimeoutException {
+	public VariableDataStructure read(int primaryAddress) throws IOException, TimeoutException {
 
-		if (serialPort == null) {
+		if (serialTransceiver.isClosed() == true) {
 			throw new IllegalStateException("Serial port is not open.");
 		}
 
-		if (meterAddress.charAt(0) == 'p') {
-			sendShortMessage(getAddress(meterAddress), 0x5b);
+		sendShortMessage(primaryAddress, 0x5b);
+		MBusMessage mBusMessage = receiveMessage();
+		try {
+			mBusMessage.decode();
+		} catch (DecodingException e) {
+			throw new IOException(e);
 		}
-		else {
-			if (selectComponent(getAddress(meterAddress), (short) 0xffff, (byte) 0xff, (byte) 0xff, timeout)) {
-				sendShortMessage(0xfd, 0x5b);
-			}
-			else {
-				// select timeout
-				throw new IOException("unbable to select component");
-			}
-		}
-
-		MBusLPdu lpdu = receiveLPdu();
-
-		VariableDataResponse vdr = new VariableDataResponse();
-		vdr.address = lpdu.getAField();
-		vdr.parse(lpdu.getAPDU());
-
-		return vdr;
+		return mBusMessage.getVariableDataResponse();
 
 	}
+
+	// public VariableDataStructure read(SecondaryAddress secondaryAddress) throws IOException, TimeoutException {
+	//
+	// if (serialTransceiver.isClosed() == true) {
+	// throw new IllegalStateException("Serial port is not open.");
+	// }
+	//
+	// if (selectComponent(secondaryAddress, timeout)) {
+	// return read(0xfd);
+	// }
+	// else {
+	// throw new IOException("unbable to select component");
+	// }
+	//
+	// }
 
 	private void sendShortMessage(int slaveAddr, int cmd) throws IOException {
 		outputBuffer[0] = 0x10;
@@ -232,36 +184,7 @@ public class MBusSap {
 		return true;
 	}
 
-	private boolean selectComponent(int id, short manuf, byte version, byte medium, int timeout) throws IOException,
-			TimeoutException {
-		ByteBuffer bf = ByteBuffer.allocate(8);
-		byte[] ba = new byte[8];
-		MBusLPdu lPdu;
-
-		bf.order(ByteOrder.LITTLE_ENDIAN);
-
-		bf.putInt(id);
-		bf.putShort(manuf);
-		bf.put(version);
-		bf.put(medium);
-
-		bf.position(0);
-		bf.get(ba, 0, 8);
-
-		// send select
-		sendLongMessage(0xfd, 0x53, 0x52, 8, ba);
-
-		lPdu = receiveLPdu();
-		if (lPdu != null) {
-			if (lPdu.msgType == MBusLPdu.MSG_TYPE_SIMPLE_CHAR) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	private MBusLPdu receiveLPdu() throws IOException, TimeoutException {
+	private MBusMessage receiveMessage() throws IOException, TimeoutException {
 
 		int timeval = 0;
 		int readBytes = 0;
@@ -305,92 +228,16 @@ public class MBusSap {
 			throw new IOException("Incomplete response message received.");
 		}
 
-		byte[] lpdu = new byte[messageLength];
-		for (int i = 0; i < messageLength; i++) {
-			lpdu[i] = inputBuffer[i];
-		}
+		byte[] messageBytes = new byte[messageLength];
+		System.arraycopy(inputBuffer, 0, messageBytes, 0, messageLength);
 
-		return new MBusLPdu(lpdu);
+		MBusMessage mBusMessage = new MBusMessage(messageBytes);
+		try {
+			mBusMessage.decode();
+		} catch (DecodingException e) {
+		}
+		return mBusMessage;
 
 	}
-
-	// private void applicationReset(String meterAddr, boolean hasSubCode, byte subCode) throws IOException,
-	// TimeoutException {
-	// byte[] subCodeArray;
-	// int len;
-	//
-	// if (hasSubCode) {
-	// len = 1;
-	// subCodeArray = new byte[1];
-	// subCodeArray[0] = subCode;
-	// }
-	// else {
-	// len = 0;
-	// subCodeArray = null;
-	// }
-	//
-	// if (meterAddr.charAt(0) == 'p') {
-	// /* SND_UD Application reset */
-	// sendLongMessage(getAddress(meterAddr), 0x53, 50, len, subCodeArray);
-	// }
-	// else {
-	// // TODO change timeout
-	// if (selectComponent(getAddress(meterAddr), (short) 0xffff, (byte) 0xff, (byte) 0xff, 2000)) {
-	// /* SND_UD Application reset */
-	// sendLongMessage(0xfd, 0x53, 50, len, subCodeArray);
-	// }
-	// else {
-	// // select timeout
-	// throw new TimeoutException();
-	// }
-	// }
-	//
-	// MBusLPdu lpdu = receiveMessage();
-	// lpdu.parse();
-	//
-	// if (lpdu.getType() != MBusLPdu.MSG_TYPE_SIMPLE_CHAR) {
-	// throw new IOException("Invalid message received!");
-	// }
-	// }
-
-	// public void applicationReset(String meterAddr) throws IOException, TimeoutException {
-	// applicationReset(meterAddr, false, (byte) 0);
-	// }
-	//
-	// public void applicationReset(String meterAddr, byte subCode) throws IOException, TimeoutException {
-	// applicationReset(meterAddr, true, subCode);
-	// }
-
-	private static int getAddress(String meterAddr) {
-
-		if (meterAddr != null) {
-
-			if (meterAddr.charAt(0) == 'p') {
-				return Integer.valueOf(meterAddr.substring(1)).intValue();
-			}
-			else {
-				return (int) (0x00000000ffffffffl & Long.parseLong(meterAddr.substring(1), 16));
-			}
-		}
-		else {
-			return 0;
-		}
-	}
-
-	/* This operation belongs to application layer !!! */
-	// TODO: revise:
-	// public boolean masterToSlaveDataSend(int slaveAddr, byte[] data) throws TimeoutException, IOException {
-	// MBusLPdu msg;
-	//
-	// sendLongMessage(slaveAddr, 0x53, 0x51, data.length, data);
-	//
-	// msg = receiveMessage(timeout);
-	//
-	// if (msg != null)
-	// return true;
-	// else
-	// return false;
-	// return true
-	// }
 
 }

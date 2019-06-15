@@ -5,16 +5,16 @@
  * For more information visit http://www.openmuc.org
  *
  * jMBus is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 2.1 of the License, or
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * jMBus is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU General Public License
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
@@ -24,7 +24,6 @@ import java.io.IOException;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.openmuc.jmbus.internal.MBusLPdu;
 
 public class MBusSapTest {
 	public void testResponseParser() {
@@ -32,37 +31,32 @@ public class MBusSapTest {
 	}
 
 	@Test
-	public void testParser2() throws IOException {
+	public void testParser2() throws IOException, DecodingException {
 		byte[] msg = MessagesTest.testMsg4;
 
-		MBusLPdu lpdu = new MBusLPdu(msg);
+		MBusMessage mBusMessage = new MBusMessage(msg);
+		mBusMessage.decodeDeep();
 
-		Assert.assertEquals(0, lpdu.getAField());
+		Assert.assertEquals(0, mBusMessage.getAddressField());
 
-		VariableDataResponse vdr = new VariableDataResponse();
+		VariableDataStructure vdr = mBusMessage.getVariableDataResponse();
 
-		try {
-			vdr.parse(lpdu.getAPDU());
-		} catch (IOException e) {
-			Assert.fail("IOException");
-		}
+		Assert.assertEquals(9, vdr.getDataRecords().size());
 
-		Assert.assertEquals(9, vdr.getVariableDataBlocks().size());
-
-		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
+		for (DataRecord dataRecord : vdr.getDataRecords()) {
 			try {
 
-				vdb.decode();
+				dataRecord.decode();
 
-				if (vdb.getDescription() != null) {
-					System.out.print(vdb.getDescription().toString());
+				if (dataRecord.getDescription() != null) {
+					System.out.print(dataRecord.getDescription().toString());
 				}
 
-				if (vdb.getDataValue() != null) {
-					System.out.print(" Value: " + vdb.getDataValue().toString());
+				if (dataRecord.getDataValue() != null) {
+					System.out.print(" Value: " + dataRecord.getDataValue().toString());
 				}
 
-				System.out.print(" Unit: " + vdb.getUnit());
+				System.out.print(" Unit: " + dataRecord.getUnit());
 
 				System.out.println();
 			} catch (DecodingException e) {
@@ -74,39 +68,32 @@ public class MBusSapTest {
 	}
 
 	@Test
-	public void testParser3() throws IOException {
+	public void testParser3() throws IOException, DecodingException {
 		byte[] msg = MessagesTest.testMsg5;
 
-		System.out.println("Test 3:");
+		MBusMessage lpdu = new MBusMessage(msg);
+		lpdu.decodeDeep();
 
-		MBusLPdu lpdu = new MBusLPdu(msg);
+		Assert.assertEquals(5, lpdu.getAddressField());
 
-		Assert.assertEquals(5, lpdu.getAField());
+		VariableDataStructure vds = lpdu.getVariableDataResponse();
 
-		VariableDataResponse vdr = new VariableDataResponse();
+		Assert.assertEquals(10, vds.getDataRecords().size());
 
-		try {
-			vdr.parse(lpdu.getAPDU());
-		} catch (IOException e) {
-			Assert.fail("IOException");
-		}
-
-		Assert.assertEquals(10, vdr.getVariableDataBlocks().size());
-
-		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
+		for (DataRecord dataRecord : vds.getDataRecords()) {
 			try {
 
-				vdb.decode();
+				dataRecord.decode();
 
-				if (vdb.getDescription() != null) {
-					System.out.print(vdb.getDescription().toString());
+				if (dataRecord.getDescription() != null) {
+					System.out.print(dataRecord.getDescription().toString());
 				}
 
-				if (vdb.getDataValue() != null) {
-					System.out.print(" Value: " + vdb.getDataValue().toString());
+				if (dataRecord.getDataValue() != null) {
+					System.out.print(" Value: " + dataRecord.getDataValue().toString());
 				}
 
-				System.out.print(" Unit: " + vdb.getUnit());
+				System.out.print(" Unit: " + dataRecord.getUnit());
 
 				System.out.println();
 			} catch (DecodingException e) {
@@ -117,39 +104,32 @@ public class MBusSapTest {
 	}
 
 	@Test
-	public void testParser4() throws IOException {
+	public void testParser4() throws IOException, DecodingException {
 		byte[] msg = MessagesTest.testMsg6;
 
-		System.out.println("Test 4:");
+		MBusMessage lpdu = new MBusMessage(msg);
+		lpdu.decodeDeep();
 
-		MBusLPdu lpdu = new MBusLPdu(msg);
+		Assert.assertEquals(13, lpdu.getAddressField());
 
-		Assert.assertEquals(13, lpdu.getAField());
+		VariableDataStructure vdr = lpdu.getVariableDataResponse();
 
-		VariableDataResponse vdr = new VariableDataResponse();
+		Assert.assertEquals(12, vdr.getDataRecords().size());
 
-		try {
-			vdr.parse(lpdu.getAPDU());
-		} catch (IOException e) {
-			Assert.fail("IOException");
-		}
-
-		Assert.assertEquals(12, vdr.getVariableDataBlocks().size());
-
-		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
+		for (DataRecord dataRecord : vdr.getDataRecords()) {
 			try {
 
-				vdb.decode();
+				dataRecord.decode();
 
-				if (vdb.getDescription() != null) {
-					System.out.print(vdb.getDescription().toString());
+				if (dataRecord.getDescription() != null) {
+					System.out.print(dataRecord.getDescription().toString());
 				}
 
-				if (vdb.getDataValue() != null) {
-					System.out.print(" Value: " + vdb.getDataValue().toString());
+				if (dataRecord.getDataValue() != null) {
+					System.out.print(" Value: " + dataRecord.getDataValue().toString());
 				}
 
-				System.out.print(" Unit: " + vdb.getUnit());
+				System.out.print(" Unit: " + dataRecord.getUnit());
 
 				System.out.println();
 			} catch (DecodingException e) {
@@ -160,39 +140,32 @@ public class MBusSapTest {
 	}
 
 	@Test
-	public void testParser5() throws IOException {
+	public void testParser5() throws IOException, DecodingException {
 		byte[] msg = MessagesTest.testMsg7;
 
-		System.out.println("Test 5:\n-------");
+		MBusMessage lpdu = new MBusMessage(msg);
+		lpdu.decodeDeep();
 
-		MBusLPdu lpdu = new MBusLPdu(msg);
+		Assert.assertEquals(1, lpdu.getAddressField());
 
-		Assert.assertEquals(1, lpdu.getAField());
+		VariableDataStructure vdr = lpdu.getVariableDataResponse();
 
-		VariableDataResponse vdr = new VariableDataResponse();
+		Assert.assertEquals(12, vdr.getDataRecords().size());
 
-		try {
-			vdr.parse(lpdu.getAPDU());
-		} catch (IOException e) {
-			Assert.fail("IOException");
-		}
-
-		Assert.assertEquals(12, vdr.getVariableDataBlocks().size());
-
-		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
+		for (DataRecord dataRecord : vdr.getDataRecords()) {
 			try {
 
-				vdb.decode();
+				dataRecord.decode();
 
-				if (vdb.getDescription() != null) {
-					System.out.print(vdb.getDescription().toString());
+				if (dataRecord.getDescription() != null) {
+					System.out.print(dataRecord.getDescription().toString());
 				}
 
-				if (vdb.getDataValue() != null) {
-					System.out.print(" Value: " + vdb.getDataValue().toString());
+				if (dataRecord.getDataValue() != null) {
+					System.out.print(" Value: " + dataRecord.getDataValue().toString());
 				}
 
-				System.out.print(" Unit: " + vdb.getUnit());
+				System.out.print(" Unit: " + dataRecord.getUnit());
 
 				System.out.println();
 			} catch (DecodingException e) {

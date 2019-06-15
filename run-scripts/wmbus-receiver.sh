@@ -31,4 +31,4 @@ for i in $@; do
     fi
 done
 
-java $SYSPROPS -cp $CLASSPATH org.openmuc.jmbus.app.ScanForMeters $PARAMS
+java $SYSPROPS -Djava.library.path=/usr/lib/jni -cp $CLASSPATH org.openmuc.jmbus.app.WMBusReceiver $PARAMS

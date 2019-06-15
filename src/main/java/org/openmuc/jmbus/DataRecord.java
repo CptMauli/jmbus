@@ -5,31 +5,32 @@
  * For more information visit http://www.openmuc.org
  *
  * jMBus is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 2.1 of the License, or
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * jMBus is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU General Public License
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 package org.openmuc.jmbus;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Calendar;
 
 /**
- * Representation of a Variable Data Block.
+ * Representation of a data record (sometimes called variable data block).
  * 
- * A variable data block is the basic data entity in the M-Bus application layer. They are part of different types of
- * M-Bus messages (e.g. a VariableDataResponse - RESP-UD). A Variable Data Block consists of three fields: The DIB (Data
- * Information Block, the VIB (Value Information Block) and the Data field.
+ * A data record is the basic data entity of the M-Bus application layer. A variable data structure contains a list of
+ * data records. Each data record represents a single data point. A data record consists of three fields: The data
+ * information block (DIB), the value information block (VIB) and the data field.
  * 
- * The DIB codes:
+ * The DIB codes the following parameters:
  * <ul>
  * <li>Storage number - a meter can have several storages e.g. to store historical time series data. The storage number
  * 0 signals an actual value.</li>
@@ -41,7 +42,7 @@ import java.util.Calendar;
  * <li>Subunit - can be used by a slave to distinguish several subunits of the metering device</li>
  * </ul>
  * 
- * The VIB codes: *
+ * The VIB codes the following parameters:
  * <ul>
  * <li>Description - the meaning of the data value (e.g. "Energy", "Volume" etc.)</li>
  * <li>Unit - the unit of the data value.</li>
@@ -49,15 +50,21 @@ import java.util.Calendar;
  * <code>getScaledDataValue()</code> returns the result of the data value multiplied with the multiplier.</li>
  * </ul>
  * 
+ * @author Stefan Feuerhahn
+ * 
  */
-public class VariableDataBlock {
+public class DataRecord {
 
-	public enum DataType {
-		LONG, DOUBLE, DATE, STRING, BCD;
+	/**
+	 * The data value type
+	 *
+	 */
+	public enum DataValueType {
+		LONG, DOUBLE, DATE, STRING, BCD, NONE;
 	}
 
 	/**
-	 * Function coded in the DIF
+	 * Function coded in the DIB
 	 * 
 	 */
 	public enum FunctionField {
@@ -65,11 +72,11 @@ public class VariableDataBlock {
 	}
 
 	/**
-	 * Data description stored in the VIF
+	 * Data description stored in the VIB
 	 * 
 	 */
 	public enum Description {
-		ENERGY, VOLUME, MASS, ON_TIME, OPERATING_TIME, POWER, VOLUME_FLOW, VOLUME_FLOW_EXT, MASS_FLOW, FLOW_TEMPERATURE, RETURN_TEMPERATURE, TEMPERATURE_DIFFERENCE, EXTERNAL_TEMPERATURE, PRESSURE, DATE, DATE_TIME, VOLTAGE, CURRENT, AVERAGING_DURATION, ACTUALITY_DURATION, FABRICATION_NO, MODEL_VERSION, PARAMETER_SET_ID, HARDWARE_VERSION, FIRMWARE_VERSION, ERROR_FLAGS, CUSTOMER, RESERVED, OPERATING_TIME_BATTERY, HCA, REACTIVE_ENERGY, TEMPERATURE_LIMIT, MAX_POWER, REACTIVE_POWER, REL_HUMIDITY, FREQUENCY, PHASE, EXTENDED_IDENTIFICATION, ADDRESS, NOT_SUPPORTED;
+		ENERGY, VOLUME, MASS, ON_TIME, OPERATING_TIME, POWER, VOLUME_FLOW, VOLUME_FLOW_EXT, MASS_FLOW, FLOW_TEMPERATURE, RETURN_TEMPERATURE, TEMPERATURE_DIFFERENCE, EXTERNAL_TEMPERATURE, PRESSURE, DATE, DATE_TIME, VOLTAGE, CURRENT, AVERAGING_DURATION, ACTUALITY_DURATION, FABRICATION_NO, MODEL_VERSION, PARAMETER_SET_ID, HARDWARE_VERSION, FIRMWARE_VERSION, ERROR_FLAGS, CUSTOMER, RESERVED, OPERATING_TIME_BATTERY, HCA, REACTIVE_ENERGY, TEMPERATURE_LIMIT, MAX_POWER, REACTIVE_POWER, REL_HUMIDITY, FREQUENCY, PHASE, EXTENDED_IDENTIFICATION, ADDRESS, NOT_SUPPORTED, USER_DEFINED;
 	}
 
 	// Data Information Block that contains a DIF and optionally up to 10 DIFEs
@@ -79,10 +86,10 @@ public class VariableDataBlock {
 	private final byte[] dataBytes;
 	private final Integer lvar;
 
-	boolean decoded = false;
+	private boolean decoded = false;
 
-	private Object data;
-	private DataType dataType;
+	private Object dataValue;
+	private DataValueType dataValueType;
 
 	// DIB fields:
 	private FunctionField functionField;
@@ -93,13 +100,14 @@ public class VariableDataBlock {
 
 	// VIB fields:
 	private Description description;
-	private int multiplierExponent;
+	private String userDefinedDescription;
+	private int multiplierExponent = 0;
 	private DlmsUnit unit;
 
 	private boolean dateTypeF = false;
 	private boolean dateTypeG = false;
 
-	VariableDataBlock(byte[] dib, byte[] vib, byte[] data, Integer lvar) {
+	DataRecord(byte[] dib, byte[] vib, byte[] data, Integer lvar) {
 		this.dib = dib;
 		this.vib = vib;
 		this.lvar = lvar;
@@ -111,7 +119,7 @@ public class VariableDataBlock {
 	}
 
 	/**
-	 * Returns a byte array containing the DIB (i.e. the DIF and the DIFEs) contained in the Variable Data Block.
+	 * Returns a byte array containing the DIB (i.e. the DIF and the DIFEs) contained in the data record.
 	 * 
 	 * @return a byte array containing the DIB
 	 */
@@ -120,7 +128,7 @@ public class VariableDataBlock {
 	}
 
 	/**
-	 * Returns a byte array containing the VIB (i.e. the VIF and the VIFEs) contained in the Variable Data Block.
+	 * Returns a byte array containing the VIB (i.e. the VIF and the VIFEs) contained in the data record.
 	 * 
 	 * @return a byte array containing the VIB
 	 */
@@ -129,31 +137,33 @@ public class VariableDataBlock {
 	}
 
 	/**
-	 * Returns the data field of the Variable Data Block as a byte array.
+	 * Returns the data field of the data record as a byte array.
 	 * 
-	 * @return Returns the Data field of the Variable Data Block as a byte array
+	 * @return Returns the Data field of the data record as a byte array
 	 */
 	public byte[] getDataValueBytes() {
 		return dataBytes;
 	}
 
 	/**
-	 * Returns the decoded data field of the Variable Data Block as an Object. The Object is of one of the four types
-	 * Long, Double, String or Date depending on information coded in the DIB/VIB. The DataType can be checked using
+	 * Returns the decoded data field of the data record as an Object. The Object is of one of the four types Long,
+	 * Double, String or Date depending on information coded in the DIB/VIB. The DataType can be checked using
 	 * getDataValueType().
+	 * 
+	 * @return the data value
 	 */
 	public Object getDataValue() {
 		if (!decoded) {
-			throw new RuntimeException("Variable Data Block was not decoded.");
+			throw new RuntimeException("Data record was not decoded.");
 		}
-		return data;
+		return dataValue;
 	}
 
-	public DataType getDataValueType() {
+	public DataValueType getDataValueType() {
 		if (!decoded) {
-			throw new RuntimeException("Variable Data Block was not decoded.");
+			throw new RuntimeException("Data record was not decoded.");
 		}
-		return dataType;
+		return dataValueType;
 	}
 
 	/**
@@ -164,7 +174,7 @@ public class VariableDataBlock {
 	 */
 	public Double getScaledDataValue() {
 		try {
-			return ((Number) data).doubleValue() * Math.pow(10, multiplierExponent);
+			return ((Number) dataValue).doubleValue() * Math.pow(10, multiplierExponent);
 		} catch (ClassCastException e) {
 			return null;
 		}
@@ -172,44 +182,56 @@ public class VariableDataBlock {
 
 	public FunctionField getFunctionField() {
 		if (!decoded) {
-			throw new RuntimeException("Variable Data Block was not decoded.");
+			throw new RuntimeException("Data record was not decoded.");
 		}
 		return functionField;
 	}
 
 	public byte getDataField() {
 		if (!decoded) {
-			throw new RuntimeException("Variable Data Block was not decoded.");
+			throw new RuntimeException("Data record was not decoded.");
 		}
 		return dataField;
 	}
 
 	public long getStorageNumber() {
 		if (!decoded) {
-			throw new RuntimeException("Variable Data Block was not decoded.");
+			throw new RuntimeException("Data record was not decoded.");
 		}
 		return storageNumber;
 	}
 
 	public int getTariff() {
 		if (!decoded) {
-			throw new RuntimeException("Variable Data Block was not decoded.");
+			throw new RuntimeException("Data record was not decoded.");
 		}
 		return tariff;
 	}
 
 	public short getSubunit() {
 		if (!decoded) {
-			throw new RuntimeException("Variable Data Block was not decoded.");
+			throw new RuntimeException("Data record was not decoded.");
 		}
 		return subunit;
 	}
 
 	public Description getDescription() {
 		if (!decoded) {
-			throw new RuntimeException("Variable Data Block was not decoded.");
+			throw new RuntimeException("Data record was not decoded.");
 		}
 		return description;
+	}
+
+	public String getUserDefinedDescription() {
+		if (!decoded) {
+			throw new RuntimeException("Data record was not decoded.");
+		}
+		if (description == Description.USER_DEFINED) {
+			return userDefinedDescription;
+		}
+		else {
+			return description.toString();
+		}
 	}
 
 	/**
@@ -220,25 +242,21 @@ public class VariableDataBlock {
 	 */
 	public int getMultiplierExponent() {
 		if (!decoded) {
-			throw new RuntimeException("Variable Data Block was not decoded.");
+			throw new RuntimeException("Data record was not decoded.");
 		}
 		return multiplierExponent;
 	}
 
 	public DlmsUnit getUnit() {
 		if (!decoded) {
-			throw new RuntimeException("Variable Data Block was not decoded.");
+			throw new RuntimeException("Data record was not decoded.");
 		}
 		return unit;
 	}
 
 	public void decode() throws DecodingException {
 
-		decoded = false;
-
-		//
 		// decode DIB
-		//
 		int ff = ((dib[0] & 0x30) >> 4);
 		switch (ff) {
 		case 0:
@@ -270,36 +288,39 @@ public class VariableDataBlock {
 
 		unit = null;
 
-		//
 		// decode VIB
-		//
 		if (vib[0] == (byte) 0xFB) {
 			decodeAlternateExtendedVif();
 		}
 		else if ((vib[0] & 0x7F) == (byte) 0x7C) {
-			throw new RuntimeException("VIF types 0x7C/FC not supported.");
+			/**
+			 * VIF equal to "E111 1100", allows user definable VIF´s (in plain ASCII-String)
+			 */
+			decodeUserDefinedVif();
 		}
 		else if (vib[0] == (byte) 0xFD) {
 			decodeMainExtendedVif();
 		}
 		else if ((vib[0] & 0x7F) == (byte) 0x7E) {
-			throw new RuntimeException("VIF types 0x7E/FE not supported.");
+			throw new DecodingException("VIF types 0x7E/FE not supported.");
 		}
 		else if ((vib[0] & 0x7F) == (byte) 0x7F) {
-			throw new RuntimeException("VIF types 0x7F/FF not supported.");
+			throw new DecodingException("VIF types 0x7F/FF not supported.");
 		}
 		else {
 			// primary VIF
 			decodeMainVif();
 		}
 
-		//
 		// decode dataField
-		//
 		switch (dataField) {
+		case 0x00:
+			dataValue = null;
+			dataValueType = DataValueType.NONE;
+			break;
 		case 0x01: /* INT8 */
-			data = new Long(dataBytes[0]);
-			dataType = DataType.LONG;
+			dataValue = new Long(dataBytes[0]);
+			dataValueType = DataValueType.LONG;
 			break;
 		case 0x02: /* INT16 */
 			if (dateTypeG) {
@@ -313,24 +334,25 @@ public class VariableDataBlock {
 
 				calendar.set(year, month - 1, day, 0, 0, 0);
 
-				data = calendar.getTime();
-				dataType = DataType.DATE;
+				dataValue = calendar.getTime();
+				dataValueType = DataValueType.DATE;
 			}
 			else {
-				data = new Long((short) ((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8)));
-				dataType = DataType.LONG;
+				dataValue = new Long((short) ((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8)));
+				dataValueType = DataValueType.LONG;
 			}
 			break;
 		case 0x03: /* INT24 */
 			if ((dataBytes[2] & 0x80) == 0x80) {
 				// negative
-				data = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8) | ((dataBytes[2] & 0xff) << 16)
-						| 0xff << 24);
+				dataValue = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8)
+						| ((dataBytes[2] & 0xff) << 16) | 0xff << 24);
 			}
 			else {
-				data = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8) | ((dataBytes[2] & 0xff) << 16));
+				dataValue = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8)
+						| ((dataBytes[2] & 0xff) << 16));
 			}
-			dataType = DataType.LONG;
+			dataValueType = DataValueType.LONG;
 			break;
 		case 0x04: /* INT32 */
 			if (dateTypeF) {
@@ -352,43 +374,47 @@ public class VariableDataBlock {
 
 				calendar.set(year, mon - 1, day, hour, min, 0);
 
-				data = calendar.getTime();
-				dataType = DataType.DATE;
+				dataValue = calendar.getTime();
+				dataValueType = DataValueType.DATE;
 			}
 			else {
-				data = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8) | ((dataBytes[2] & 0xff) << 16)
-						| ((dataBytes[3] & 0xff) << 24));
-				dataType = DataType.LONG;
+				dataValue = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8)
+						| ((dataBytes[2] & 0xff) << 16) | ((dataBytes[3] & 0xff) << 24));
+				dataValueType = DataValueType.LONG;
 			}
 			break;
 		case 0x06: /* INT48 */
 			if ((dataBytes[2] & 0x80) == 0x80) {
 				// negative
-				data = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8) | ((dataBytes[2] & 0xff) << 16)
-						| ((dataBytes[3] & 0xff) << 24) | ((dataBytes[4] & 0xff) << 32) | ((dataBytes[5] & 0xff) << 40)
-						| (0xffl << 48) | (0xffl << 56));
+				dataValue = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8)
+						| ((dataBytes[2] & 0xff) << 16) | ((dataBytes[3] & 0xff) << 24) | ((dataBytes[4] & 0xff) << 32)
+						| ((dataBytes[5] & 0xff) << 40) | (0xffl << 48) | (0xffl << 56));
 			}
 			else {
-				data = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8) | ((dataBytes[2] & 0xff) << 16)
-						| ((dataBytes[3] & 0xff) << 24) | (((long) dataBytes[4] & 0xff) << 32)
-						| (((long) dataBytes[5] & 0xff) << 40));
+				dataValue = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8)
+						| ((dataBytes[2] & 0xff) << 16) | ((dataBytes[3] & 0xff) << 24)
+						| (((long) dataBytes[4] & 0xff) << 32) | (((long) dataBytes[5] & 0xff) << 40));
 			}
-			dataType = DataType.LONG;
+			dataValueType = DataValueType.LONG;
 			break;
 		case 0x07: /* INT64 */
-			data = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8) | ((dataBytes[2] & 0xff) << 16)
+			dataValue = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8) | ((dataBytes[2] & 0xff) << 16)
 					| ((dataBytes[3] & 0xff) << 24) | (((long) dataBytes[4] & 0xff) << 32)
 					| (((long) dataBytes[5] & 0xff) << 40) | (((long) dataBytes[6] & 0xff) << 48)
 					| (((long) dataBytes[7] & 0xff) << 56));
-			dataType = DataType.LONG;
+			dataValueType = DataValueType.LONG;
+			break;
+		case 0x08: /* no data - selection for readout request */
+			dataValue = null;
+			dataValueType = DataValueType.NONE;
 			break;
 		case 0x09:
 		case 0x0a:
 		case 0x0b:
 		case 0x0c:
 		case 0x0e:
-			data = new Bcd(dataBytes);
-			dataType = DataType.BCD;
+			dataValue = new Bcd(dataBytes);
+			dataValueType = DataValueType.BCD;
 			break;
 		case 0x0d: /* variable length - LVAR */
 			if (lvar < 0xc0) {
@@ -398,12 +424,15 @@ public class VariableDataBlock {
 					rawData[i] = (char) dataBytes[dataBytes.length - 1 - i];
 				}
 
-				data = new String(rawData);
-				dataType = DataType.STRING;
+				dataValue = new String(rawData);
+				dataValueType = DataValueType.STRING;
 			}
-			throw new DecodingException("Unknown Data Field in DIF");
+			else {
+				throw new DecodingException("LVAR field > 0xc0: " + lvar);
+			}
+			break;
 		default:
-			throw new DecodingException("Unknown Data Field in DIF");
+			throw new DecodingException("Unknown Data Field in DIF: " + HexConverter.getHexStringFromByte(dataField));
 		}
 
 		decoded = true;
@@ -427,6 +456,28 @@ public class VariableDataBlock {
 				unit = DlmsUnit.DAY;
 			}
 		}
+	}
+
+	/**
+	 * Convert Hex to ASCII and reverse the letters
+	 * 
+	 * @throws DecodingException
+	 */
+	private void decodeUserDefinedVif() throws DecodingException {
+		description = Description.USER_DEFINED;
+
+		try {
+			userDefinedDescription = new String(vib, "ASCII");
+		} catch (UnsupportedEncodingException e) {
+			throw new DecodingException("User defined description is not valid ASCII string.");
+		}
+
+		// remove the first vib from string
+		if (userDefinedDescription.length() > 0) {
+			userDefinedDescription = userDefinedDescription.substring(1);
+		}
+
+		userDefinedDescription = new StringBuilder(userDefinedDescription).reverse().toString();
 	}
 
 	private void decodeMainVif() {
@@ -1054,6 +1105,86 @@ public class VariableDataBlock {
 
 		}
 
+	}
+
+	@Override
+	public String toString() {
+
+		StringBuilder builder = new StringBuilder();
+
+		builder.append("DIB:").append(composeHexStringFromByteArray(dib));
+		builder.append(", VIB:").append(composeHexStringFromByteArray(vib));
+
+		if (!decoded) {
+			builder.append(" -> DataRecord has not been decoded.");
+			return builder.toString();
+		}
+
+		builder.append(" -> descr:").append(description);
+		if (description == Description.USER_DEFINED) {
+			builder.append(" :").append(getUserDefinedDescription());
+		}
+		builder.append(", function:").append(functionField);
+
+		if (storageNumber > 0) {
+			builder.append(", storage:").append(storageNumber);
+		}
+
+		if (tariff > 0) {
+			builder.append(", tariff:").append(tariff);
+		}
+
+		if (subunit > 0) {
+			builder.append(", subunit:").append(subunit);
+		}
+
+		switch (dataValueType) {
+		case DATE:
+			builder.append(", value:").append((dataValue).toString());
+			break;
+		case STRING:
+			builder.append(", value:").append((dataValue).toString());
+			break;
+		case DOUBLE:
+			builder.append(", scaled value:").append(getScaledDataValue());
+			break;
+		case LONG:
+			if (multiplierExponent == 0) {
+				builder.append(", value:").append(dataValue);
+			}
+			else {
+				builder.append(", scaled value:").append(getScaledDataValue());
+			}
+			break;
+		case BCD:
+			if (multiplierExponent == 0) {
+				builder.append(", value:").append((dataValue).toString());
+			}
+			else {
+				builder.append(", scaled value:").append(getScaledDataValue());
+			}
+			break;
+		case NONE:
+			builder.append(", value: NONE");
+			break;
+		}
+
+		if (unit != null) {
+			builder.append(", unit:").append(unit);
+		}
+
+		return builder.toString();
+
+	}
+
+	private static String composeHexStringFromByteArray(byte[] data) {
+		StringBuilder builder = new StringBuilder(data.length * 2);
+
+		for (byte element : data) {
+			builder.append(String.format("%02x", 0xff & element));
+		}
+
+		return builder.toString();
 	}
 
 }

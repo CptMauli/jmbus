@@ -1,3 +1,11 @@
+v2.0.0 02-Dec-2014
+------------------
+- changed license from LGPL to GPLv3 or higher
+- added support for wireless M-Bus. Transceivers supported are from Amber
+  and RadioCrafts
+- API clean up, for better understanding
+- added detailed user guide on how M-Bus works and how jMBus is used.
+
 v1.3 17-Jul-2014
 ----------------
 - added decoding support for more VIBs and DIBS

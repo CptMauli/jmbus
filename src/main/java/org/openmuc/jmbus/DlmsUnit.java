@@ -5,23 +5,23 @@
  * For more information visit http://www.openmuc.org
  *
  * jMBus is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 2.1 of the License, or
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * jMBus is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
+ * You should have received a copy of the GNU General Public License
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 package org.openmuc.jmbus;
 
 /**
- * The units as defined in IEC 62056-62.
+ * The units as defined in IEC 62056-62. Some units not defined in IEC 62056-62 but needed by M-Bus were added.
  * 
  * @author Stefan Feuerhahn
  * 
@@ -57,48 +57,4 @@ public enum DlmsUnit {
 		return code;
 	}
 
-	public String getAbbreviation() {
-		switch (code) {
-		case 27:
-			return "W";
-		case 30:
-			return "Wh";
-		case 35:
-			return "V";
-		case 33:
-			return "A";
-		case 28:
-			return "VA";
-		case 44:
-			return "Hz";
-		case 5:
-			return "h";
-		case 9:
-			return "°C";
-		case 8:
-			return "°";
-		case 13:
-			return "m^3";
-		case 15:
-			return "m^3/h";
-		case 4:
-			return "d";
-		case 56:
-			return "%";
-		case 6:
-			return "min";
-		case 7:
-			return "s";
-		case 19:
-			return "l";
-		case 12:
-			return "m/s";
-		case 151:
-			return "m^3/m";
-		case 150:
-			return "m^3/s";
-		default:
-			return "unknown";
-		}
-	}
 }

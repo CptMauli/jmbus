@@ -18,8 +18,8 @@
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+package org.openmuc.jmbus;
 
-Authors: Stefan Feuerhahn & Michael Zillgith
-
-For documentation take a look at the user guide in the doc/userguide
-folder of the distribution or online at http://www.openmuc.org.
+public enum WMBusMode {
+	T, S
+}
