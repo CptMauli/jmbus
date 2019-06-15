@@ -1,3 +1,30 @@
+v2.3.0 18-Jul-2017
+------------------
+
+- changed license from GPL to MPL v2.0 (Mozilla Public License)
+
+- depends on jRxTx instead of RXTX library for serial
+  communication. jRxTx is compatible to the RXTX native libraries.
+
+- added IMST wireless M-Bus transceivers support. Tested with
+  IM871A-USB
+
+- refactored sample apps, one start script for all now
+
+- new version of CLI parser for sample apps
+
+- added verbose messages as listener
+
+- added automatic resynchronization when receiving wM-Bus data using
+  Amber stick, thanks to Felix Wagner
+
+- SecondaryAddress.java is comparable now
+
+- removed printouts in scan secondary address, added message listener
+
+- fixed smaller bugs and typos
+
+
 v2.2.2 04-Jul-2016
 ------------------
 - added support for negative BCDs thanks to Mr Pirscoveanu from

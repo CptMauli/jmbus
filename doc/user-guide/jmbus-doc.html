@@ -18,7 +18,7 @@
 
 /* Default font. */
 body {
-  font-family: "Open Sans", Helvetica, sans-serif;
+  font-family: Helvetica, sans-serif;
   max-width:62.5em;
   margin: auto;
 }
@@ -27,7 +27,7 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
     clear: both;
-    font-family: "Open Sans", Georgia, serif;
+    font-family: Helvetica, serif;
     line-height: 1.3;
 }
 
@@ -539,7 +539,8 @@ table.CodeRay td.code>pre{padding:0}
 <p>jMBus is an implementation of the M-Bus wired and wireless
 protocols. You can use it to program individual M-Bus wired masters or
 wireless M-Bus receivers that read meters such as gas, water, heat, or
-electricity meters.</p>
+electricity meters. jMBus is licensed under the Mozilla Public License
+(MPL) v.2.0.</p>
 </div>
 <div class="paragraph">
 <p>For M-Bus wired communication the library communicates over a serial
@@ -549,34 +550,36 @@ successfully tested the library with level-converters from Relay.</p>
 <div class="paragraph">
 <p>For wireless M-Bus communication the library requires a transceiver
 usually connected via USB. Currently jMBus support transceivers from
-Amber and Radiocrafts. The library was tested with the AMB8465-M from
-Amber and the RC1180-MBUS from Radiocrafts. The jMBus library only
-supports passive listening for messages in modes S and T at the
-moment. Encryption mode 5 (AES with CBC and IV) is supported.</p>
+Amber, IMST and Radiocrafts. The library was tested with the AMB8465-M
+and AMB8665-M from Amber, the IM871A-USB from IMST and the RC1180-MBUS
+rom Radiocrafts. The jMBus library only supports passive listening for
+messages in modes S and T at the moment. Encryption mode 5 (AES with
+CBC and IV) is supported.</p>
 </div>
 <div class="sect2">
 <h3 id="_dependencies">1.1. Dependencies</h3>
 <div class="paragraph">
-<p>jMBus depends on the Java library RXTX (Copyright 1997-2004 by Trent
-Jarvi) for accessing the serial port (UART). RXTX is required even if
-the level-converter or transceiver is connected via USB because
-communication is done over a virtual serial port (e.g. /dev/ttyUSB0)
-in this case. RXTX is licensed under LGPL(v2 or later). RXTX consists
-of a Java part located in the dependencies folder of the distribution
-and a native part.  Note that you have to install the native part of
-RXTX as explained in our FAQs:
-<a href="https://www.openmuc.org/faq/" class="bare">https://www.openmuc.org/faq/</a></p>
+<p>jMBus depends on the Java library jRxTx. jRxTx is a fork of RxTx and
+is hosted at <a href="https://github.com/openmuc/jrxtx" class="bare">https://github.com/openmuc/jrxtx</a>. The library is licensed
+under the LGPL(v2.1 or later) + linking exception.</p>
+</div>
+<div class="paragraph">
+<p>jRxTx consists of a Java part located in the <em>dependencies</em> folder
+of the distribution and a native part that is equivalent to that of
+RxTx. Note that you have to install the native part of RxTx as
+explained in our
+<a href="https://www.openmuc.org/faq/how-do-i-get-serial-communication-to-work-with-rxtx/">FAQ</a>.</p>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_command_line_applications">1.2. Command Line Applications</h3>
 <div class="paragraph">
-<p>Several command line applications are part of the library. You can
-execute them using the scripts found in the folder "run-scripts". The
-files ending with .sh are shell scripts for Unix/Linux/Mac. The files
-ending with .bat.winfile are batch files for use with Windows. In order
-to run the scripts in Windows you have to rename the batch files by
-removing the ".winfile" ending so that they simply end with ".bat".</p>
+<p>One command line applications is part of the library. You can
+execute this using the script found in the folder "run-scripts". The
+file ending with .sh is a shell script for Unix/Linux/Mac. The file
+ending with .bat.winfile is a batch file for use with Windows. In order
+to run the script in Windows you have to rename the batch file by
+removing the ".winfile" ending so that it simply end with ".bat".</p>
 </div>
 <div class="paragraph">
 <p>jMBus contains the following command line applications:</p>
@@ -584,31 +587,35 @@ removing the ".winfile" ending so that they simply end with ".bat".</p>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>read-meter</strong> - can be used to read a specific device over wired
-M-Bus</p>
+<p><strong>jmbusApp</strong> - can be used to:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>read a specific device over wired M-Bus</p>
 </li>
 <li>
-<p><strong>write-meter</strong> - can be used to write data to a specific device over
-wired M-Bus</p>
+<p>write data to a specific device over wired M-Bus</p>
 </li>
 <li>
-<p><strong>scan-for-meters</strong> - scans for connected wired M-Bus devices</p>
+<p>scan for connected wired M-Bus devices</p>
 </li>
 <li>
-<p><strong>wmbus-receiver</strong> - listens for incoming wireless M-Bus messages and
+<p>listens for incoming wireless M-Bus messages and
 prints them to the screen</p>
 </li>
 </ul>
 </div>
+</li>
+</ul>
+</div>
 <div class="paragraph">
-<p>Executing the scripts without any parameters will print help
+<p>Executing the script without any parameters will print help
 information to the screen.</p>
 </div>
 <div class="paragraph">
-<p>Instead of running the applications from the terminal you can create
+<p>Instead of running the application from the terminal you can create
 Eclipse project files as explained here:
-<a href="https://www.openmuc.org/faq/" class="bare">https://www.openmuc.org/faq/</a> and run them from
-within Eclipse.</p>
+<a href="https://www.openmuc.org/faq/" class="bare">https://www.openmuc.org/faq/</a> and run them from within Eclipse.</p>
 </div>
 </div>
 <div class="sect2">
@@ -1056,7 +1063,7 @@ instructions on our FAQ site:
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2016-07-04 14:11:15 +02:00
+Last updated 2017-07-18 16:25:13 +02:00
 </div>
 </div>
 </body>
