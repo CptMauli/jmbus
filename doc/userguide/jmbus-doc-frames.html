@@ -322,8 +322,8 @@ div.toclevel4 { margin-left: 6em; font-size: 0.8em; }
   margin-top: 1em;
 }
 
-.paragraph p, li, dd, .content { max-width: 45em; }
-.admonitionblock               { max-width: 35em; }
+/*.paragraph p, li, dd, .content { max-width: 85em; }
+.admonitionblock               { max-width: 35em; }*/
 
 div.sectionbody div.ulist > ul > li {
   list-style-type: square;
@@ -692,6 +692,12 @@ removing the ".winfile" ending so that they simply end with ".bat".</p></div>
 </li>
 <li>
 <p>
+<strong>write-meter</strong> - can be used to write data to a specific device over
+   wired M-Bus
+</p>
+</li>
+<li>
+<p>
 <strong>scan-for-meters</strong> - scans for connected wired M-Bus devices
 </p>
 </li>
@@ -735,11 +741,13 @@ by devices as a power supply. M-Bus devices are protected against
 polarity reversal and may use a baud rate between 300 Baud
 and 38400 Baud. Most meters use 2400 Baud.</p></div>
 <div class="paragraph"><p>Wired M-Bus differentiates between five different frame types: single
-character, SND_NKE, SND_UD, REQ_UD1, REQ_UD2 and RSP_UD. The most
-common M-Bus message exchange is the request/response service where
-the master sends a REQ_UD2 frame addressed to a specific slave
-(usually a meter) and the slave answers with RSP_UD message containing
-all the current measurement values.</p></div>
+character (the byte 0xe5 is used for confirmation purposes), SND_NKE
+(send link reset), SND_UD (send user data), REQ_UD1 (request user
+data 1), REQ_UD2 (request user data 2) and RSP_UD (respond user
+data). The most common M-Bus message exchange is the request/response
+service where the master sends a REQ_UD2 frame addressed to a specific
+slave (usually a meter) and the slave answers with RSP_UD message
+containing all the current measurement values.</p></div>
 <div class="paragraph"><p>The REQ_UD2 frame contains only the primary address (1 byte) of the
 slave that is to be read. A master cannot address certain data points
 it wants to read. Instead the slave always answers with a complete
@@ -1025,6 +1033,10 @@ response is returned by the read function.</p></div>
 <pre><code>VariableDataStructure variableDataStructure = mBusSap.read(1);</code></pre>
 </div></div>
 <div class="paragraph"><p>Next the variable data structure can be parsed as explained below.</p></div>
+<div class="paragraph"><p>An opened SAP can also be used to write data to a device. The following
+line writes 0x017a09, by calling SND_UD, to a meter with primary address 5.
+This will change the primary address from 5 to 9.</p></div>
+<div class="paragraph"><p>boolean sent = mBusSap.write(5, new byte[]{0x01, 0x7a, 0x09});</p></div>
 </div>
 <div class="sect2">
 <h3 id="_wireless_m_bus_2">3.2. Wireless M-Bus</h3>
@@ -1057,9 +1069,7 @@ to the application.</p></div>
 <div class="sect2">
 <h3 id="_variable_data_structure_2">3.3. Variable Data Structure</h3>
 <div class="paragraph"><p>Before accessing elements of a variable data structure it has to be
-decoded using the decode or the decodeDeep method. The decode function
-will only decode the header but will not parse the data records it
-contains. The decode deep function will also parse the data records.</p></div>
+decoded using the decode method.</p></div>
 </div>
 </div>
 </div>
@@ -1075,11 +1085,37 @@ instructions on our FAQ site:
 <a href="http://www.openmuc.org/index.php?id=72#faq_gradle">http://www.openmuc.org/index.php?id=72#faq_gradle</a></p></div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_authors">5. Authors</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>Developers:</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Stefan Feuerhahn
+</p>
+</li>
+<li>
+<p>
+Dirk Zimmermann
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>Former developers:</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Michael Zillgith
+</p>
+</li>
+</ul></div>
+</div>
+</div>
 </div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2014-11-27 14:55:01 CET
+Last updated 2015-11-18 09:17:26 CET
 </div>
 </div>
 </body>

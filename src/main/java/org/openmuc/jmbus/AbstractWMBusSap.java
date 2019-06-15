@@ -1,5 +1,3 @@
-package org.openmuc.jmbus;
-
 /*
  * Copyright 2010-15 Fraunhofer ISE
  *
@@ -20,6 +18,8 @@ package org.openmuc.jmbus;
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+package org.openmuc.jmbus;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.HashMap;
@@ -57,12 +57,12 @@ abstract class AbstractWMBusSap implements WMBusSap {
 
 	@Override
 	public void setKey(SecondaryAddress address, byte[] key) {
-		keyMap.put(HexConverter.getShortHexStringFromByteArray(address.asByteArray()), key);
+		keyMap.put(HexConverter.toShortHexString(address.asByteArray()), key);
 	}
 
 	@Override
 	public void removeKey(SecondaryAddress address) {
-		keyMap.remove(HexConverter.getShortHexStringFromByteArray(address.asByteArray()));
+		keyMap.remove(HexConverter.toShortHexString(address.asByteArray()));
 	}
 
 }

@@ -1,3 +1,14 @@
+v2.2.0 18-Nov-2015
+------------------
+- added support for writing to meters
+- added a command-line application for writing to meters
+- added support for scanning secondary addresses
+- refactored decoding function to improve performance
+- added support for Float32 decoding
+- several minor improvements
+- added possibility to select certain records/registers for readout
+- changed from java 6 to java 7
+
 v2.1.0 21-Jan-2015
 ------------------
 - added support for secondary addressing using wired M-Bus

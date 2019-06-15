@@ -20,10 +20,8 @@
  */
 package org.openmuc.jmbus;
 
-import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -46,8 +44,9 @@ public class VariableDataStructure {
 	private int status;
 	private EncryptionMode encryptionMode;
 	private int numberOfEncryptedBlocks;
-	private byte[] manufacturerData;
-	private byte[] encryptedVariableDataResponse;
+	private byte[] manufacturerData = new byte[0];
+	private byte[] encryptedVariableDataResponse = new byte[0];;
+	private boolean moreRecordsFollow = false;
 
 	private boolean decoded = false;
 
@@ -68,21 +67,21 @@ public class VariableDataStructure {
 			int ciField = buffer[offset] & 0xff;
 
 			switch (ciField) {
-			case 0x72: /* long header */
+			case 0x72:
 				decodeLongHeader(buffer, offset + 1);
 				decodeDataRecords(buffer, offset + 13, length - 13);
 				break;
-			case 0x78: /* no header */
+			case 0x78:
 				decodeDataRecords(buffer, offset + 1, length - 1);
-			case 0x7a: /* short header */
+				break;
+			case 0x7a:
 				decodeShortHeader(buffer, offset + 1);
 				if (encryptionMode == EncryptionMode.AES_CBC_IV) {
 					encryptedVariableDataResponse = new byte[length - 5];
 					System.arraycopy(buffer, offset + 5, encryptedVariableDataResponse, 0, length - 5);
 
-					byte[] key = keyMap
-							.get(HexConverter.getShortHexStringFromByteArray(linkLayerSecondaryAddress.asByteArray(),
-									0, linkLayerSecondaryAddress.asByteArray().length));
+					byte[] key = keyMap.get(HexConverter.toShortHexString(linkLayerSecondaryAddress.asByteArray(), 0,
+							linkLayerSecondaryAddress.asByteArray().length));
 					if (key == null) {
 						throw new DecodingException(
 								"Unable to decode encrypted payload because no key for the following secondary address was registered: "
@@ -101,34 +100,17 @@ public class VariableDataStructure {
 				break;
 			default:
 				if ((ciField >= 0xA0) && (ciField <= 0xB7)) {
-					throw new DecodingException("Manufacturer specific CI: "
-							+ HexConverter.getHexStringFromByte(ciField));
+					throw new DecodingException(
+							"Manufacturer specific CI: " + HexConverter.toHexString((byte) ciField));
 				}
-				throw new DecodingException("Unable to decode message with this CI Field: "
-						+ HexConverter.getHexStringFromByte(ciField));
+				throw new DecodingException(
+						"Unable to decode message with this CI Field: " + HexConverter.toHexString((byte) ciField));
 			}
 		} catch (Exception e) {
 			throw new DecodingException(e);
 		}
 
 		decoded = true;
-	}
-
-	public void decodeDeep() throws DecodingException {
-		decode();
-		DecodingException e1 = null;
-		for (DataRecord dataRecord : dataRecords) {
-			try {
-				dataRecord.decode();
-			} catch (DecodingException e2) {
-				if (e1 == null) {
-					e1 = e2;
-				}
-			}
-		}
-		if (e1 != null) {
-			throw new DecodingException(e1);
-		}
 	}
 
 	public SecondaryAddress getSecondaryAddress() {
@@ -159,6 +141,10 @@ public class VariableDataStructure {
 		return dataRecords;
 	}
 
+	public boolean moreRecordsFollow() {
+		return moreRecordsFollow;
+	}
+
 	private void decodeLongHeader(byte[] buffer, int offset) {
 
 		secondaryAddress = SecondaryAddress.getFromLongHeader(buffer, offset);
@@ -168,175 +154,41 @@ public class VariableDataStructure {
 	}
 
 	private void decodeShortHeader(byte[] buffer, int offset) {
-
 		int i = offset;
 
 		accessNumber = buffer[i++] & 0xff;
 		status = buffer[i++] & 0xff;
 		numberOfEncryptedBlocks = (buffer[i++] & 0xf0) >> 4;
 		encryptionMode = EncryptionMode.newEncryptionMode(buffer[i++] & 0x0f);
-
 	}
 
 	private void decodeDataRecords(byte[] buffer, int offset, int length) throws DecodingException {
 
-		ByteBuffer buf;
-		buf = ByteBuffer.wrap(buffer, offset, length);
-		buf.order(ByteOrder.LITTLE_ENDIAN);
-
 		dataRecords = new ArrayList<DataRecord>();
 
-		// a maximum of 10 DIFEs are allowed in the spec
-		byte[] dib = new byte[11];
-		byte[] vib = new byte[11];
+		int i = offset;
 
-		Integer lvar = null;
+		while (i < offset + length - 2) {
 
-		int dataField;
-		int dibCounter;
-		int vibCounter;
+			if ((buffer[i] & 0xef) == 0x0f) {
+				// manufacturer specific data
 
-		while (buf.position() < buf.limit()) {
-
-			dib[0] = buf.get();
-
-			int difPosition = buf.position();
-
-			if (((dib[0] & 0xef) == 0x0f)) {
-				// Manufacturer specific data
-
-				ByteArrayOutputStream tmp = new ByteArrayOutputStream();
-				while (buf.position() < buf.limit()) {
-					tmp.write(buf.get());
+				if ((buffer[i] & 0x10) == 0x10) {
+					moreRecordsFollow = true;
 				}
-				manufacturerData = tmp.toByteArray();
 
+				manufacturerData = Arrays.copyOfRange(buffer, i + 1, offset + length - 2);
 				return;
 			}
-			if (dib[0] == 0x2f) {
-				// this is a fill byte
+
+			if (buffer[i] == 0x2f) {
+				// this is a fill byte because some encryption mechanisms need multiples of 8 bytes to encode data
+				i++;
 				continue;
 			}
 
-			dataField = dib[0] & 0x0f;
-
-			dibCounter = 1;
-
-			// while extension bit is set
-			while ((dib[dibCounter - 1] & 0x80) == 0x80) {
-				dib[dibCounter] = buf.get();
-				dibCounter++;
-			}
-
-			vibCounter = 0;
-			do {
-				vib[vibCounter] = buf.get();
-				vibCounter++;
-			} while ((vib[vibCounter - 1] & 0x80) == 0x80);
-
-			int dataLength;
-
-			switch (dataField) {
-			case 0x00:
-				dataLength = 0;
-				break;
-			case 0x01:
-				dataLength = 1;
-				break;
-			case 0x02:
-				dataLength = 2;
-				break;
-			case 0x03:
-				dataLength = 3;
-				break;
-			case 0x04:
-				dataLength = 4;
-				break;
-			case 0x06:
-				dataLength = 6;
-				break;
-			case 0x07:
-				dataLength = 8;
-				break;
-			case 0x08:
-				dataLength = 0;
-				break;
-			case 0x09:
-				dataLength = 1;
-				break;
-			case 0x0a:
-				dataLength = 2;
-				break;
-			case 0x0b:
-				dataLength = 3;
-				break;
-			case 0x0c:
-				dataLength = 4;
-				break;
-			case 0x0d:
-				lvar = 0xff & buf.get();
-
-				if (lvar < 0xc0) {
-					dataLength = lvar;
-				}
-				else if ((lvar >= 0xc0) && (lvar <= 0xc9)) {
-					dataLength = 2 * (lvar - 0xc0);
-				}
-				else if ((lvar >= 0xd0) && (lvar <= 0xd9)) {
-					dataLength = 2 * (lvar - 0xd0);
-				}
-				else if ((lvar >= 0xe0) && (lvar <= 0xef)) {
-					dataLength = lvar - 0xe0;
-				}
-				else if (lvar == 0xf8) {
-					dataLength = 4;
-				}
-				else {
-					throw new DecodingException("Unsupported LVAR Field: " + lvar + " at " + (buf.position() - 1));
-				}
-				break;
-			case 0x0e:
-				dataLength = 6;
-				break;
-			default:
-				throw new DecodingException("Unsupported Data Field: " + dataField + " at " + difPosition);
-			}
-
-			/**
-			 * 
-			 * VIF equal to "E111 1100", allows user definable VIF´s (in plain ASCII-String) VIF is in following string
-			 * and length is given in the first byte
-			 * 
-			 */
-			int lengthOfUserDefinedVIF = 0;
-			for (int i = 0; i < vibCounter; i++) {
-				if ((vib[0] & 0x7F) == 0x7C) {
-					lengthOfUserDefinedVIF = buf.get() & 0xFF;
-					break;
-				}
-			}
-
-			byte[] dibParam = new byte[dibCounter];
-			byte[] vibParam = new byte[vibCounter + lengthOfUserDefinedVIF];
-			byte[] dataParam = new byte[dataLength];
-
-			for (int i = 0; i < dibCounter; i++) {
-				dibParam[i] = dib[i];
-			}
-
-			for (int i = 0; i < vibCounter; i++) {
-				vibParam[i] = vib[i];
-			}
-
-			for (int j = 0; j < lengthOfUserDefinedVIF; j++) {
-				vibParam[j + vibCounter] = buf.get();
-			}
-
-			for (int i = 0; i < dataLength; i++) {
-				dataParam[i] = buf.get();
-			}
-
-			DataRecord dataRecord = new DataRecord(dibParam, vibParam, dataParam, lvar);
+			DataRecord dataRecord = new DataRecord();
+			i = dataRecord.decode(buffer, i, length);
 
 			dataRecords.add(dataRecord);
 
@@ -394,26 +246,31 @@ public class VariableDataStructure {
 		StringBuilder builder = new StringBuilder();
 		if (!decoded) {
 			builder.append("VariableDataResponse has not been decoded. Bytes:\n");
-			HexConverter.appendHexStringFromByteArray(builder, buffer, offset, length);
+			HexConverter.appendHexString(builder, buffer, offset, length);
 			return builder.toString();
 		}
 		else {
 
 			if (secondaryAddress != null) {
-				builder.append("Secondary address -> ").append(secondaryAddress).append("\n");
+				builder.append("Secondary address: {").append(secondaryAddress).append("}\n");
 			}
-			builder.append("Short Header -> Access No.:").append(accessNumber).append(", status: ").append(status)
+			builder.append("Short Header: {Access No.: ").append(accessNumber).append(", status: ").append(status)
 					.append(", encryption mode: ").append(encryptionMode).append(", number of encrypted blocks: ")
 					.append(numberOfEncryptedBlocks);
 
-			if (encryptedVariableDataResponse != null) {
-				builder.append("\nencrypted variable data response: "
-						+ getByteArrayString(encryptedVariableDataResponse));
+			if (encryptedVariableDataResponse.length != 0) {
+				builder.append("\nEncrypted variable data: " + HexConverter.toHexString(encryptedVariableDataResponse));
 			}
 			else {
 				for (DataRecord dataRecord : dataRecords) {
 					builder.append("\n");
 					builder.append(dataRecord.toString());
+				}
+				if (manufacturerData.length != 0) {
+					builder.append("\n").append(HexConverter.toHexString(manufacturerData));
+				}
+				if (moreRecordsFollow) {
+					builder.append("\n").append("More records follow ...");
 				}
 			}
 		}
@@ -421,24 +278,4 @@ public class VariableDataStructure {
 
 	}
 
-	public static String getByteArrayString(byte[] byteArray) {
-		StringBuilder builder = new StringBuilder();
-		int l = 1;
-		for (byte b : byteArray) {
-			if ((l != 1) && ((l - 1) % 8 == 0)) {
-				builder.append(' ');
-			}
-			if ((l != 1) && ((l - 1) % 16 == 0)) {
-				builder.append('\n');
-			}
-			l++;
-			builder.append("0x");
-			String hexString = Integer.toHexString(b & 0xff);
-			if (hexString.length() == 1) {
-				builder.append(0);
-			}
-			builder.append(hexString + " ");
-		}
-		return builder.toString();
-	}
 }

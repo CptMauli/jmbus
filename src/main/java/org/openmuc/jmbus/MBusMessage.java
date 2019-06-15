@@ -35,101 +35,83 @@ package org.openmuc.jmbus;
  * </ul>
  * 
  */
-public class MBusMessage {
+class MBusMessage {
 
-	enum FrameType {
-		SIMPLE_CHAR, SHORT_FRAME, LONG_FRAME, CONTROL
+	enum MessageType {
+		// the other message types (e.g. SND_NKE, REQ_UD2) cannot be sent from slave to master and are therefore
+		// omitted.
+		SINGLE_CHARACTER,
+		RSP_UD;
 	};
 
-	byte[] buffer;
+	private final MessageType messageType;
+	private final int addressField;
+	private final VariableDataStructure variableDataStructure;
 
-	private FrameType frameType;
-	private byte controlField;
-	private byte addressField;
-	private VariableDataStructure vdr;
-	private boolean decoded = false;
+	MBusMessage(byte[] buffer, int length) throws DecodingException {
 
-	public MBusMessage(byte[] buffer) {
-
-		this.buffer = buffer;
-	}
-
-	public void decode() throws DecodingException {
-		/* Determine message type */
-		switch (0xff & buffer[0]) {
-		case 0xe5: /* single char message */
-			frameType = FrameType.SIMPLE_CHAR;
+		switch (buffer[0] & 0xff) {
+		case 0xe5:
+			messageType = MessageType.SINGLE_CHARACTER;
+			addressField = 0;
+			variableDataStructure = null;
 			break;
-		case 0x68: /* long message (variable length frame) */
-			int headerLength;
+		case 0x68:
+			int lengthField = buffer[1] & 0xff;
 
-			frameType = FrameType.LONG_FRAME;
-			if ((short) (0xff & buffer[3]) != 0x68) {
-				throw new DecodingException("Error parsing LPDU");
-			}
-			headerLength = 0xff & buffer[1];
-			if (headerLength != (buffer.length - 6)) {
-				throw new DecodingException("Wrong frame length (header says " + headerLength
-						+ ") but current length is " + buffer.length + " !");
+			if (lengthField != length - 6) {
+				throw new DecodingException(
+						"Wrong length field in frame header does not match the buffer length. Length field: "
+								+ lengthField + ", buffer length: " + length + " !");
 			}
 
-			if (headerLength != (short) (0xff & buffer[2])) {
+			if (buffer[1] != buffer[2]) {
 				throw new DecodingException("Length fields are not identical in long frame!");
 			}
 
-			controlField = (byte) (0xff & buffer[4]);
-			addressField = (byte) (0xff & buffer[5]);
-			int apduLength = headerLength - 2;
-			int apduStart = 6;
+			if (buffer[3] != 0x68) {
+				throw new DecodingException("Fourth byte of long frame was not 0x68.");
+			}
 
-			vdr = new VariableDataStructure(buffer, apduStart, apduLength, null, null);
-			break;
-		case 0x10: /* short message (fixed length frame) */
-			frameType = FrameType.SHORT_FRAME;
+			int controlField = buffer[4] & 0xff;
+
+			if ((controlField & 0xcf) != 0x08) {
+				throw new DecodingException(
+						"Unexptected control field value: " + HexConverter.toHexString((byte) controlField));
+			}
+
+			messageType = MessageType.RSP_UD;
+
+			addressField = buffer[5] & 0xff;
+
+			variableDataStructure = new VariableDataStructure(buffer, 6, length - 6, null, null);
 			break;
 		default:
-			throw new DecodingException("Error parsing LPDU");
+			throw new DecodingException("Unexpected first frame byte: " + HexConverter.toHexString(buffer[0]));
 		}
-		decoded = true;
-	}
-
-	public void decodeDeep() throws DecodingException {
-		decode();
-		vdr.decodeDeep();
 	}
 
 	public int getAddressField() {
 		return addressField;
 	}
 
-	public int getControlField() {
-		return controlField;
-	}
-
-	public FrameType getFrameType() {
-		return frameType;
+	public MessageType getMessageType() {
+		return messageType;
 	}
 
 	public VariableDataStructure getVariableDataResponse() {
-		return vdr;
+		return variableDataStructure;
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		if (!decoded) {
-			builder.append("Message has not been decoded. Bytes of this message:\n");
-			HexConverter.appendHexStringFromByteArray(builder, buffer, 0, buffer.length);
-			return builder.toString();
-		}
-		else {
-			builder.append("control field: ");
-			HexConverter.appendHexStringFromByte(controlField & 0xff, builder);
-			builder.append("\naddress field: ");
-			builder.append(addressField & 0xff);
-			builder.append("\nVariable Data Response:\n").append(vdr);
-			return builder.toString();
-		}
+		builder.append("message type: ");
+		builder.append(messageType);
+		builder.append("\naddress field: ");
+		builder.append(addressField & 0xff);
+		builder.append("\nVariable Data Response:\n").append(variableDataStructure);
+		return builder.toString();
 	}
 
 }

@@ -20,16 +20,17 @@
  */
 package org.openmuc.jmbus;
 
-import gnu.io.SerialPort;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-import org.openmuc.jmbus.MBusMessage.FrameType;
+import org.openmuc.jmbus.MBusMessage.MessageType;
+
+import gnu.io.SerialPort;
 
 /**
  * M-Bus Application Layer Service Access Point - Use this access point to communicate using the M-Bus wired protocol.
@@ -39,15 +40,21 @@ import org.openmuc.jmbus.MBusMessage.FrameType;
  */
 public class MBusSap {
 
+	// 261 is the maximum size of a long frame
+	private final static int MAX_MESSAGE_SIZE = 261;
+
 	private final SerialTransceiver serialTransceiver;
 
-	private final byte[] outputBuffer = new byte[1000];
-	private final byte[] inputBuffer = new byte[1000];
+	private final byte[] outputBuffer = new byte[MAX_MESSAGE_SIZE];
 
-	private DataOutputStream os;
-	private DataInputStream is;
+	private final byte[] dataRecordsAsBytes = new byte[MAX_MESSAGE_SIZE];
 
-	private int timeout = 5000;
+	private final boolean[] frameCountBits;
+
+	private DataOutputStream os = null;
+	private DataInputStream is = null;
+
+	private int timeout = 300;
 	private SecondaryAddress secondaryAddress = null;
 
 	/**
@@ -61,6 +68,10 @@ public class MBusSap {
 	public MBusSap(String serialPortName, int baudRate) {
 		serialTransceiver = new SerialTransceiver(serialPortName, baudRate, SerialPort.DATABITS_8,
 				SerialPort.STOPBITS_1, SerialPort.PARITY_EVEN);
+		frameCountBits = new boolean[254];
+		for (int i = 0; i < frameCountBits.length; i++) {
+			frameCountBits[i] = true;
+		}
 	}
 
 	/**
@@ -83,13 +94,15 @@ public class MBusSap {
 	}
 
 	/**
-	 * Sets the maximum time in ms to wait for new data from the remote device. A timeout of zero is interpreted as an
-	 * infinite timeout.
+	 * Sets the maximum time in ms to wait for new data from the remote device.
 	 * 
 	 * @param timeout
-	 *            the maximum time in ms to wait for new data.
+	 *            the maximum time in ms to wait for new data. Must be greater then 0.
 	 */
 	public void setTimeout(int timeout) {
+		if (timeout <= 0) {
+			throw new IllegalArgumentException("timeout may not be 0");
+		}
 		this.timeout = timeout;
 	}
 
@@ -121,15 +134,103 @@ public class MBusSap {
 			throw new IllegalStateException("Serial port is not open.");
 		}
 
-		sendShortMessage(primaryAddress, 0x5b);
-		MBusMessage mBusMessage = receiveMessage();
-		try {
-			mBusMessage.decode();
-		} catch (DecodingException e) {
-			throw new IOException(e);
+		if (frameCountBits[primaryAddress]) {
+			sendShortMessage(primaryAddress, 0x7b);
+			frameCountBits[primaryAddress] = false;
 		}
+		else {
+			sendShortMessage(primaryAddress, 0x5b);
+			frameCountBits[primaryAddress] = true;
+		}
+
+		MBusMessage mBusMessage = receiveMessage();
+
+		if (mBusMessage.getMessageType() != MessageType.RSP_UD) {
+			throw new IOException(
+					"Received wrong kind of message. Expected RSP_UD but got: " + mBusMessage.getMessageType());
+		}
+
+		if (mBusMessage.getAddressField() != primaryAddress) {
+//			throw new IOException("Received RSP_UD message with unexpected address field. Expected " + primaryAddress
+//					+ " but received " + mBusMessage.getAddressField());
+		}
+
+		try {
+			mBusMessage.getVariableDataResponse().decode();
+		} catch (DecodingException e) {
+			throw new IOException("Error decoding incoming RSP_UD message.", e);
+		}
+
 		return mBusMessage.getVariableDataResponse();
 
+	}
+
+	/**
+	 * Writes to a meter using primary addressing. Sends a data send (SND_UD) to the remote device and returns a true if
+	 * slave sends a 0x7e else false
+	 * 
+	 * @param primaryAddress
+	 *            the primary address of the meter to write. For secondary address use 0xfd.
+	 * @param data
+	 *            the data to sends to the meter.
+	 * @return true if data could be sent else false
+	 * @throws IOException
+	 *             if any kind of error (including timeout) occurs while trying to read the remote device. Note that the
+	 *             connection is not closed when an IOException is thrown.
+	 * @throws TimeoutException
+	 *             if no response at all (not even a single byte) was received from the meter within the timeout span.
+	 */
+	public boolean write(int primaryAddress, byte[] data) throws IOException, TimeoutException {
+
+		boolean ret;
+		if (data == null) {
+			data = new byte[] {};
+		}
+		ret = sendLongMessage(primaryAddress, 0x73, 0x51, data.length, data);
+		MBusMessage mBusMessage = receiveMessage();
+
+		if (mBusMessage.getMessageType() != MessageType.SINGLE_CHARACTER) {
+			throw new IOException("unable to select component");
+		}
+		return ret;
+	}
+
+	/**
+	 * [alpha]<br>
+	 * Scans if any device response to the given wildcard.
+	 * 
+	 * @param wildcard
+	 *            secondary address wildcard e.g. f1ffffffffffffff
+	 * @return true ifany device responsed else false
+	 */
+	public boolean scanSelection(SecondaryAddress wildcard) {
+
+		ByteBuffer bf = ByteBuffer.allocate(8);
+		byte[] ba = new byte[8];
+
+		bf.order(ByteOrder.LITTLE_ENDIAN);
+
+		bf.put(wildcard.asByteArray());
+
+		bf.position(0);
+		bf.get(ba, 0, 8);
+
+		boolean ret = false;
+		try {
+			if (sendLongMessage(0xfd, 0x53, 0x52, 8, ba)) {
+
+				MBusMessage mBusMessage = receiveMessage();
+
+				if (mBusMessage.getMessageType() == MessageType.SINGLE_CHARACTER) {
+					ret = true;
+				}
+			}
+		} catch (IOException e) {
+			ret = true;
+		} catch (TimeoutException e) {
+			ret = false;
+		}
+		return ret;
 	}
 
 	/**
@@ -164,10 +265,54 @@ public class MBusSap {
 		}
 	}
 
+	public void selectForReadout(int primaryAddress, List<DataRecord> dataRecords)
+			throws IOException, TimeoutException {
+
+		int i = 0;
+		for (DataRecord dataRecord : dataRecords) {
+			i += dataRecord.encode(dataRecordsAsBytes, i);
+		}
+		sendLongMessage(primaryAddress, 0x53, 0x51, i, dataRecordsAsBytes);
+		MBusMessage mBusMessage = receiveMessage();
+
+		if (mBusMessage.getMessageType() != MessageType.SINGLE_CHARACTER) {
+			throw new IOException("unable to select component");
+		}
+	}
+
+	public void resetReadout(int primaryAddress) throws IOException, TimeoutException {
+		sendLongMessage(primaryAddress, 0x53, 0x50, 0, new byte[] {});
+		MBusMessage mBusMessage = receiveMessage();
+
+		if (mBusMessage.getMessageType() != MessageType.SINGLE_CHARACTER) {
+			throw new IOException("unable to select component");
+		}
+	}
+
+	/**
+	 * Sends a SND_NKE message to reset the FCB (frame counter bit).
+	 * 
+	 * @param primaryAddress
+	 *            the primary address of the meter to reset.
+	 * @throws IOException
+	 *             if an error occurs during the reset process.
+	 * @throws TimeoutException
+	 *             if the slave does not answer with an 0xe5 message within the configured timeout span.
+	 */
+	public void linkReset(int primaryAddress) throws IOException, TimeoutException {
+		sendShortMessage(primaryAddress, 0x40);
+		MBusMessage mBusMessage = receiveMessage();
+
+		if (mBusMessage.getMessageType() != MessageType.SINGLE_CHARACTER) {
+			throw new IOException("unable to reset link");
+		}
+
+		frameCountBits[primaryAddress] = true;
+	}
+
 	private void componentSelection(boolean deselect) throws IOException, TimeoutException {
 		ByteBuffer bf = ByteBuffer.allocate(8);
 		byte[] ba = new byte[8];
-		MBusMessage lPdu;
 
 		bf.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -184,10 +329,10 @@ public class MBusSap {
 			sendLongMessage(0xfd, 0x53, 0x52, 8, ba);
 		}
 
-		lPdu = receiveMessage();
+		MBusMessage mBusMessage = receiveMessage();
 
-		if (lPdu == null || lPdu.getFrameType() != FrameType.SIMPLE_CHAR) {
-			throw new IOException("unbable to select component");
+		if (mBusMessage.getMessageType() != MessageType.SINGLE_CHARACTER) {
+			throw new IOException("unable to select component");
 		}
 	}
 
@@ -200,7 +345,7 @@ public class MBusSap {
 		os.write(outputBuffer, 0, 5);
 	}
 
-	private boolean sendLongMessage(int slaveAddr, int cmd, int ci, int length, byte[] data) {
+	private boolean sendLongMessage(int slaveAddr, int controlField, int ci, int length, byte[] data) {
 		int i, j;
 		int checksum = 0;
 
@@ -208,7 +353,7 @@ public class MBusSap {
 		outputBuffer[1] = (byte) (length + 3);
 		outputBuffer[2] = (byte) (length + 3);
 		outputBuffer[3] = 0x68;
-		outputBuffer[4] = (byte) cmd;
+		outputBuffer[4] = (byte) controlField;
 		outputBuffer[5] = (byte) slaveAddr;
 		outputBuffer[6] = (byte) ci;
 
@@ -235,56 +380,61 @@ public class MBusSap {
 
 	private MBusMessage receiveMessage() throws IOException, TimeoutException {
 
-		int timeval = 0;
-		int readBytes = 0;
+		int timePassedTotal = 0;
+		int numBytesReadTotal = 0;
 		int messageLength = -1;
 
-		while ((timeout == 0 || timeval < timeout) && readBytes != messageLength) {
+		byte[] inputBuffer = new byte[MAX_MESSAGE_SIZE];
+
+		while (true) {
 			if (is.available() > 0) {
 
-				int numBytesRead = is.read(inputBuffer, readBytes, 300 - readBytes);
-				readBytes += numBytesRead;
+				int numBytesRead = is.read(inputBuffer, numBytesReadTotal, MAX_MESSAGE_SIZE - numBytesReadTotal);
 
-				if (numBytesRead > 0) {
-					timeval = 0;
-				}
+				numBytesReadTotal += numBytesRead;
 
-				if (messageLength == -1 && readBytes > 0) {
+				if (messageLength == -1) {
 
 					if ((inputBuffer[0] & 0xff) == 0xe5) {
 						messageLength = 1;
 					}
-					else if ((inputBuffer[0] & 0xff) == 0x68 && readBytes > 1) {
+					else if ((inputBuffer[0] & 0xff) == 0x68 && numBytesReadTotal > 1) {
 						messageLength = (inputBuffer[1] & 0xff) + 6;
 					}
 				}
+
+				if (numBytesReadTotal == messageLength) {
+					break;
+				}
 			}
 
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
+			if (timePassedTotal > timeout) {
+				if (numBytesReadTotal == 0) {
+					throw new TimeoutException();
+				}
+				if (numBytesReadTotal != messageLength) {
+					throw new IOException("Incomplete response message received.");
+				}
+			}
+			else {
+
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+				}
+
+				timePassedTotal += 100;
 			}
 
-			timeval += 100;
-
 		}
 
-		if (readBytes == 0) {
-			throw new TimeoutException();
-		}
-
-		if (readBytes != messageLength) {
-			throw new IOException("Incomplete response message received.");
-		}
-
-		byte[] messageBytes = new byte[messageLength];
-		System.arraycopy(inputBuffer, 0, messageBytes, 0, messageLength);
-
-		MBusMessage mBusMessage = new MBusMessage(messageBytes);
+		MBusMessage mBusMessage;
 		try {
-			mBusMessage.decode();
+			mBusMessage = new MBusMessage(inputBuffer, messageLength);
 		} catch (DecodingException e) {
+			throw new IOException("Error decoding incoming M-Bus message.");
 		}
+
 		return mBusMessage;
 
 	}

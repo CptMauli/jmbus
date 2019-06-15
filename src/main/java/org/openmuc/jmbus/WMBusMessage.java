@@ -26,7 +26,7 @@ import java.util.HashMap;
  * 
  * Represents a wireless M-Bus link layer message without the CRC checksum.
  * 
- * {@link WMBusDataMessage} is structured as follows:
+ * {@link WMBusMessage} is structured as follows:
  * <ul>
  * <li>Length (1 byte) - the length (number of bytes) of the complete message without the length byte and the CRC bytes.
  * </li>
@@ -49,7 +49,7 @@ import java.util.HashMap;
  * @author Stefan Feuerhahn
  *
  */
-public class WMBusDataMessage {
+public class WMBusMessage {
 
 	private final byte[] buffer;
 	private final Integer signalStrengthInDBm;
@@ -62,7 +62,7 @@ public class WMBusDataMessage {
 
 	private boolean decoded = false;
 
-	WMBusDataMessage(byte[] buffer, Integer signalStrengthInDBm, HashMap<String, byte[]> keyMap) {
+	WMBusMessage(byte[] buffer, Integer signalStrengthInDBm, HashMap<String, byte[]> keyMap) {
 		this.buffer = buffer;
 		this.signalStrengthInDBm = signalStrengthInDBm;
 		this.keyMap = keyMap;
@@ -83,7 +83,7 @@ public class WMBusDataMessage {
 
 	public void decodeDeep() throws DecodingException {
 		decode();
-		vdr.decodeDeep();
+		vdr.decode();
 	}
 
 	public boolean isDecoded() {
@@ -123,12 +123,12 @@ public class WMBusDataMessage {
 		}
 		if (!decoded) {
 			builder.append("Message has not been decoded. Bytes of this message:\n");
-			HexConverter.appendHexStringFromByteArray(builder, buffer, 0, buffer.length);
+			HexConverter.appendHexString(builder, buffer, 0, buffer.length);
 			return builder.toString();
 		}
 		else {
 			builder.append("control field: ");
-			HexConverter.appendHexStringFromByte(controlField, builder);
+			HexConverter.appendHexString(controlField, builder);
 			builder.append("\nSecondary Address -> ").append(secondaryAddress).append("\nVariable Data Response:\n")
 					.append(vdr);
 			return builder.toString();

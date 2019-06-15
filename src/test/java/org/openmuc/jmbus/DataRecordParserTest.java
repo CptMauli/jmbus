@@ -20,8 +20,6 @@
  */
 package org.openmuc.jmbus;
 
-import java.util.Date;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.openmuc.jmbus.DataRecord.Description;
@@ -30,12 +28,15 @@ public class DataRecordParserTest {
 
 	@Test
 	public void testINT64() {
-		DataRecord dataRecord = new DataRecord(new byte[] { (byte) 0x07 }, new byte[] { (byte) 0x04 },
-				new byte[] { (byte) 0x12, (byte) 0x23, (byte) 0x34, (byte) 0x45, (byte) 0x56, (byte) 0x67, (byte) 0x78,
-						(byte) 0x12 }, null);
+
+		DataRecord dataRecord = new DataRecord();
+
+		byte[] bytes = new byte[] { (byte) 0x07, (byte) 0x04, (byte) 0x12, (byte) 0x23, (byte) 0x34, (byte) 0x45,
+				(byte) 0x56, (byte) 0x67, (byte) 0x78, (byte) 0x12 };
 
 		try {
-			dataRecord.decode();
+
+			dataRecord.decode(bytes, 0, bytes.length);
 
 			Object obj = dataRecord.getDataValue();
 
@@ -51,11 +52,12 @@ public class DataRecordParserTest {
 			Assert.fail("Unexpected exception");
 		}
 
-		dataRecord = new DataRecord(new byte[] { (byte) 0x07 }, new byte[] { (byte) 0x04 }, new byte[] { (byte) 0xFF,
-				(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF }, null);
+		dataRecord = new DataRecord();
+		bytes = new byte[] { (byte) 0x07, (byte) 0x04, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF,
+				(byte) 0xFF, (byte) 0xFF, (byte) 0xFF };
 
 		try {
-			dataRecord.decode();
+			dataRecord.decode(bytes, 0, bytes.length);
 
 			Object obj = dataRecord.getDataValue();
 
@@ -74,12 +76,12 @@ public class DataRecordParserTest {
 	@Test
 	public void testINT32() {
 
-		byte[] data = new byte[] { (byte) 0xe4, (byte) 0x05, (byte) 0x00, (byte) 0x00 };
+		DataRecord dataRecord = new DataRecord();
 
-		DataRecord dataRecord = new DataRecord(new byte[] { (byte) 0x04 }, new byte[] { (byte) 0x03 }, data, null);
+		byte[] bytes = new byte[] { (byte) 0x04, (byte) 0x03, (byte) 0xe4, (byte) 0x05, (byte) 0x00, (byte) 0x00 };
 
 		try {
-			dataRecord.decode();
+			dataRecord.decode(bytes, 0, bytes.length);
 
 			Object obj = dataRecord.getDataValue();
 
@@ -93,12 +95,12 @@ public class DataRecordParserTest {
 			Assert.fail("Failed to parse!");
 		}
 
-		data = new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff };
+		dataRecord = new DataRecord();
 
-		dataRecord = new DataRecord(new byte[] { (byte) 0x04 }, new byte[] { (byte) 0x03 }, data, null);
+		bytes = new byte[] { (byte) 0x04, (byte) 0x03, (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff };
 
 		try {
-			dataRecord.decode();
+			dataRecord.decode(bytes, 0, bytes.length);
 
 			Object obj = dataRecord.getDataValue();
 
@@ -114,12 +116,12 @@ public class DataRecordParserTest {
 
 	}
 
-	private void assertParsingResults(DataRecord dataRecord, Description desc, DlmsUnit unit, byte scaler, Object data) {
-		try {
-			dataRecord.decode();
-		} catch (DecodingException e) {
-			Assert.fail("Failed to parse!");
-		}
+	private void assertParsingResults(byte[] bytes, Description desc, DlmsUnit unit, byte scaler, Object data)
+			throws DecodingException {
+
+		DataRecord dataRecord = new DataRecord();
+
+		dataRecord.decode(bytes, 0, bytes.length);
 
 		Assert.assertEquals(desc, dataRecord.getDescription());
 		Assert.assertEquals(unit, dataRecord.getUnit());
@@ -128,74 +130,63 @@ public class DataRecordParserTest {
 	}
 
 	@Test
-	public void testDataRecords() {
+	public void testDataRecords() throws DecodingException {
 		/* e0000nnn Energy Wh */
-		DataRecord dataRecord = new DataRecord(new byte[] { (byte) 0x04 }, new byte[] { (byte) 0x07 }, new byte[] {
-				(byte) 0xc8, (byte) 0x1e, (byte) 0x00, (byte) 0x00 }, null);
 
-		assertParsingResults(dataRecord, Description.ENERGY, DlmsUnit.WATT_HOUR, (byte) 4, new Long(7880));
+		byte[] bytes = new byte[] { (byte) 0x04, (byte) 0x07, (byte) 0xc8, (byte) 0x1e, (byte) 0x00, (byte) 0x00 };
+
+		assertParsingResults(bytes, Description.ENERGY, DlmsUnit.WATT_HOUR, (byte) 4, new Long(7880));
 
 		/* e0001nnn Energy J */
 
 		/* e0010nnn Volume m^3 */
-		dataRecord = new DataRecord(new byte[] { (byte) 0x04 }, new byte[] { (byte) 0x15 }, new byte[] { (byte) 0xfe,
-				(byte) 0xbf, (byte) 0x00, (byte) 0x00 }, null);
+		bytes = new byte[] { (byte) 0x04, (byte) 0x15, (byte) 0xfe, (byte) 0xbf, (byte) 0x00, (byte) 0x00 };
 
-		assertParsingResults(dataRecord, Description.VOLUME, DlmsUnit.CUBIC_METRE, (byte) -1, new Long(49150));
+		assertParsingResults(bytes, Description.VOLUME, DlmsUnit.CUBIC_METRE, (byte) -1, new Long(49150));
 
-		dataRecord = new DataRecord(new byte[] { (byte) 0x84, (byte) 0x40 }, new byte[] { (byte) 0x15 }, new byte[] {
-				(byte) 0xf8, (byte) 0xbf, (byte) 0x00, (byte) 0x00 }, null);
+		bytes = new byte[] { (byte) 0x84, (byte) 0x40, (byte) 0x15, (byte) 0xf8, (byte) 0xbf, (byte) 0x00,
+				(byte) 0x00 };
 
-		assertParsingResults(dataRecord, Description.VOLUME, DlmsUnit.CUBIC_METRE, (byte) -1, new Long(49144));
+		assertParsingResults(bytes, Description.VOLUME, DlmsUnit.CUBIC_METRE, (byte) -1, new Long(49144));
 
 		/* e0011nnn Mass kg */
 
 		/* e01000nn On Time seconds/minutes/hours/days */
-		dataRecord = new DataRecord(new byte[] { (byte) 0x04 }, new byte[] { (byte) 0x22 }, new byte[] { (byte) 0x38,
-				(byte) 0x09, (byte) 0x00, (byte) 0x00 }, null);
+		bytes = new byte[] { (byte) 0x04, (byte) 0x22, (byte) 0x38, (byte) 0x09, (byte) 0x00, (byte) 0x00 };
 
-		assertParsingResults(dataRecord, Description.ON_TIME, DlmsUnit.HOUR, (byte) 0, new Long(2360));
+		assertParsingResults(bytes, Description.ON_TIME, DlmsUnit.HOUR, (byte) 0, new Long(2360));
 
 		/* e01001nn Operating Time seconds/minutes/hours/days */
-		dataRecord = new DataRecord(new byte[] { (byte) 0x04 }, new byte[] { (byte) 0x26 }, new byte[] { (byte) 0x3d,
-				(byte) 0x07, (byte) 0x00, (byte) 0x00 }, null);
+		bytes = new byte[] { (byte) 0x04, (byte) 0x26, (byte) 0x3d, (byte) 0x07, (byte) 0x00, (byte) 0x00 };
 
-		assertParsingResults(dataRecord, Description.OPERATING_TIME, DlmsUnit.HOUR, (byte) 0, new Long(1853));
+		assertParsingResults(bytes, Description.OPERATING_TIME, DlmsUnit.HOUR, (byte) 0, new Long(1853));
 
 		/* e10110nn Flow Temperature °C */
-		dataRecord = new DataRecord(new byte[] { (byte) 0x02 }, new byte[] { (byte) 0x5a }, new byte[] { (byte) 0x79,
-				(byte) 0x02 }, null);
+		bytes = new byte[] { (byte) 0x02, (byte) 0x5a, (byte) 0x79, (byte) 0x02 };
 
-		assertParsingResults(dataRecord, Description.FLOW_TEMPERATURE, DlmsUnit.DEGREE_CELSIUS, (byte) -1, new Long(
-				(short) 633));
+		assertParsingResults(bytes, Description.FLOW_TEMPERATURE, DlmsUnit.DEGREE_CELSIUS, (byte) -1,
+				new Long((short) 633));
 
 		/* e10111nn Return Temperature °C */
-		dataRecord = new DataRecord(new byte[] { (byte) 0x02 }, new byte[] { (byte) 0x5e }, new byte[] { (byte) 0xa6,
-				(byte) 0x01 }, null);
+		bytes = new byte[] { (byte) 0x02, (byte) 0x5e, (byte) 0xa6, (byte) 0x01 };
 
-		assertParsingResults(dataRecord, Description.RETURN_TEMPERATURE, DlmsUnit.DEGREE_CELSIUS, (byte) -1, new Long(
-				(short) 422));
+		assertParsingResults(bytes, Description.RETURN_TEMPERATURE, DlmsUnit.DEGREE_CELSIUS, (byte) -1,
+				new Long((short) 422));
 
 		/* e11000nn Temperature Difference K */
-		dataRecord = new DataRecord(new byte[] { (byte) 0x02 }, new byte[] { (byte) 0x62 }, new byte[] { (byte) 0xd3,
-				(byte) 0x00 }, null);
+		bytes = new byte[] { (byte) 0x02, (byte) 0x62, (byte) 0xd3, (byte) 0x00 };
 
-		assertParsingResults(dataRecord, Description.TEMPERATURE_DIFFERENCE, DlmsUnit.KELVIN, (byte) -1, new Long(
-				(short) 211));
+		assertParsingResults(bytes, Description.TEMPERATURE_DIFFERENCE, DlmsUnit.KELVIN, (byte) -1,
+				new Long((short) 211));
 
 		/* e1101101 Date and time - type F */
-		dataRecord = new DataRecord(new byte[] { (byte) 0x04 }, new byte[] { (byte) 0x6d }, new byte[] { (byte) 0x2b,
-				(byte) 0x11, (byte) 0x78, (byte) 0x11 }, null);
+		bytes = new byte[] { (byte) 0x04, (byte) 0x6d, (byte) 0x2b, (byte) 0x11, (byte) 0x78, (byte) 0x11 };
 
-		try {
-			dataRecord.decode();
-			Date date = (Date) dataRecord.getDataValue();
-			System.out.println(date.getTime());
-		} catch (DecodingException e) {
-			Assert.fail("Failed to parse!");
-		}
+		DataRecord dataRecord = new DataRecord();
 
-		// assertParsingResults(vdb, Description.DATE_TIME, DLMSUnit.OTHER_UNIT, (byte) 0, new Date(1295887380276l));
+		dataRecord.decode(bytes, 0, bytes.length);
+		dataRecord.getDataValue();
+
 	}
 
 }

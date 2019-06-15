@@ -29,7 +29,7 @@ import java.io.IOException;
  */
 public interface WMBusListener {
 
-	public void newMessage(WMBusDataMessage message);
+	public void newMessage(WMBusMessage message);
 
 	public void discardedBytes(byte[] bytes);
 

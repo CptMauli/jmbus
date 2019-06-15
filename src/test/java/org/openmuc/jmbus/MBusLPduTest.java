@@ -31,8 +31,7 @@ public class MBusLPduTest {
 	public void testParser() throws IOException, DecodingException {
 		byte[] msg = MessagesTest.testMsg1;
 
-		MBusMessage mBusMessage = new MBusMessage(msg);
-		mBusMessage.decode();
+		MBusMessage mBusMessage = new MBusMessage(msg, msg.length);
 
 		Assert.assertEquals(1, mBusMessage.getAddressField());
 
@@ -42,8 +41,7 @@ public class MBusLPduTest {
 	public void testParser2() throws IOException, DecodingException {
 		byte[] msg = MessagesTest.testMsg4;
 
-		MBusMessage mBusMessage = new MBusMessage(msg);
-		mBusMessage.decode();
+		MBusMessage mBusMessage = new MBusMessage(msg, msg.length);
 
 		Assert.assertEquals(0, mBusMessage.getAddressField());
 

@@ -24,77 +24,120 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 import org.openmuc.jmbus.MBusSap;
+import org.openmuc.jmbus.ScanSecondaryAddress;
 
-/**
- * 
- * @author Stefan Feuerhahn
- *
- */
 public class ScanForMeters {
 
+	private final static int MIN_ARGS_LENGTH = 1;
+	private final static int MAX_ARGS_LENGTH = 5;
+	private final static int WILDCARD_MASK_LENGTH = 8;
+
 	private static void printUsage() {
-		System.out.println("SYNOPSIS\n\torg.openmuc.jmbus.app.ScanForMeters <serial_port> [<baud_rate>]");
-		System.out
-				.println("DESCRIPTION\n\tScans the primary addresses 0 to 250 for connected meters by sending REQ_UD2 packets and waiting for a response.");
+		System.out.println(
+				"SYNOPSIS\n\torg.openmuc.jmbus.app.ScanForMeters <serial_port> [-b <baud_rate>] [-s [<wildcard_mask>]]");
+		System.out.println(
+				"DESCRIPTION\n\tScans the primary addresses 0 to 250 for connected meters by sending REQ_UD2 packets and waiting for a response.");
 		System.out.println("OPTIONS");
-		System.out
-				.println("\t<serial_port>\n\t    The serial port used for communication. Examples are /dev/ttyS0 (Linux) or COM1 (Windows)\n");
+		System.out.println(
+				"\t<serial_port>\n\t    The serial port used for communication. Examples are /dev/ttyS0 (Linux) or COM1 (Windows)\n");
 		System.out.println("\t<baud_rate>\n\t    The baud rate used to connect to the meter. Default is 2400.\n");
+		System.out.println("\t-s\n\t Scan for secondary addresses. Examples are -s or -s 15ffffff\n");
 	}
 
 	public static void main(String[] args) {
-		if (args.length < 1 || args.length > 2) {
+
+		int argsLength = args.length;
+		int baudRate = 2400;
+		int timeout = 1000;
+		String wildcardMask = "ffffffff";
+
+		boolean scanSecondaryAddress = false;
+
+		if (argsLength < MIN_ARGS_LENGTH || argsLength > MAX_ARGS_LENGTH) {
 			printUsage();
 			System.exit(1);
 		}
 
 		String serialPortName = args[0];
 
-		int baudRate = 2400;
-		if (args.length == 2) {
-			try {
-				baudRate = Integer.parseInt(args[1]);
-			} catch (NumberFormatException e) {
-				System.out.println("Error, the <baud_rate> parameter is not an integer value.");
-				return;
+		for (int i = 1; i < args.length; ++i) {
+
+			if (args[i].equals("-b")) {
+				try {
+					baudRate = Integer.parseInt(args[++i]);
+				} catch (NumberFormatException e) {
+					error("Error, the <baud_rate> parameter is not an integer value.");
+				} catch (NullPointerException e) {
+					error("Error, no baudrate behind -b.");
+				}
+			}
+
+			if (args[i].equals("-s")) {
+				scanSecondaryAddress = true;
+				if (i < argsLength - 1) {
+					if (args[++i].startsWith("-")) {
+						--i;
+					}
+					else {
+						wildcardMask = args[i];
+						if (wildcardMask.length() != WILDCARD_MASK_LENGTH) {
+							error("Error, allowed wilcard mask length is " + WILDCARD_MASK_LENGTH + " charactors.");
+						}
+					}
+				}
 			}
 		}
 
 		MBusSap mBusSap = new MBusSap(serialPortName, baudRate);
 		try {
 			mBusSap.open();
+			mBusSap.setTimeout(timeout);
+
+			System.out.println("Scanning address: ");
+
+			if (scanSecondaryAddress) {
+				ScanSecondaryAddress.scan(mBusSap, wildcardMask);
+			}
+			else {
+				scanPrimaryAddresses(mBusSap);
+			}
+
 		} catch (IOException e2) {
 			System.out.println("Failed to open serial port: " + e2.getMessage());
 			return;
-		}
-
-		mBusSap.setTimeout(1000);
-
-		System.out.print("Scanning address: ");
-		try {
-			for (int i = 0; i <= 250; i++) {
-
-				System.out.print(i + ",");
-				try {
-					mBusSap.read(i);
-				} catch (TimeoutException e) {
-					continue;
-				} catch (IOException e) {
-					System.out.println();
-					System.out.println("Error reading meter at primary address " + i + ": " + e.getMessage());
-					System.out.print("Scanning address: ");
-					continue;
-				}
-				System.out.println();
-				System.out.println("Found device at primary address " + i + ".");
-				System.out.print("Scanning address: ");
-			}
 		} finally {
 			mBusSap.close();
 		}
 		System.out.println();
 		System.out.println("Scan finished.");
 
+	}
+
+	static void scanPrimaryAddresses(MBusSap mBusSap) {
+
+		for (int i = 0; i <= 250; i++) {
+
+			System.out.print(i + ",");
+			try {
+				mBusSap.linkReset(i);
+				mBusSap.read(i);
+			} catch (TimeoutException e) {
+				continue;
+			} catch (IOException e) {
+				System.out.println();
+				System.out.println("Error reading meter at primary address " + i + ": " + e.getMessage());
+				System.out.print("Scanning address: ");
+				continue;
+			}
+			System.out.println();
+			System.out.println("Found device at primary address " + i + ".");
+			System.out.print("Scanning address: ");
+		}
+	}
+
+	private static void error(String errMsg) {
+		System.err.println(errMsg);
+		System.exit(1);
 	}
 
 }

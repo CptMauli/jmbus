@@ -19,7 +19,12 @@
  *
  */
 
-Authors: Stefan Feuerhahn, Michael Zillgith & Dirk Zimmermann
+Dependencies
+------------
 
-For documentation take a look at the user guide in the doc/userguide
-folder of the distribution or online at http://www.openmuc.org.
+Information about the licenses of open source dependencies packaged
+with jDLMS can be found in the folder named "dependencies" inside the
+distribution.
+
+You may request the source code of the dependencies by sending a mail
+through our website at openmuc.org.

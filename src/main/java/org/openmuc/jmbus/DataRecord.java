@@ -20,7 +20,9 @@
  */
 package org.openmuc.jmbus;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Calendar;
 
 /**
@@ -60,7 +62,12 @@ public class DataRecord {
 	 *
 	 */
 	public enum DataValueType {
-		LONG, DOUBLE, DATE, STRING, BCD, NONE;
+		LONG,
+		DOUBLE,
+		DATE,
+		STRING,
+		BCD,
+		NONE;
 	}
 
 	/**
@@ -68,7 +75,10 @@ public class DataRecord {
 	 * 
 	 */
 	public enum FunctionField {
-		INST_VAL, MAX_VAL, MIN_VAL, ERROR_VAL;
+		INST_VAL,
+		MAX_VAL,
+		MIN_VAL,
+		ERROR_VAL;
 	}
 
 	/**
@@ -76,24 +86,60 @@ public class DataRecord {
 	 * 
 	 */
 	public enum Description {
-		ENERGY, VOLUME, MASS, ON_TIME, OPERATING_TIME, POWER, VOLUME_FLOW, VOLUME_FLOW_EXT, MASS_FLOW, FLOW_TEMPERATURE, RETURN_TEMPERATURE, TEMPERATURE_DIFFERENCE, EXTERNAL_TEMPERATURE, PRESSURE, DATE, DATE_TIME, VOLTAGE, CURRENT, AVERAGING_DURATION, ACTUALITY_DURATION, FABRICATION_NO, MODEL_VERSION, PARAMETER_SET_ID, HARDWARE_VERSION, FIRMWARE_VERSION, ERROR_FLAGS, CUSTOMER, RESERVED, OPERATING_TIME_BATTERY, HCA, REACTIVE_ENERGY, TEMPERATURE_LIMIT, MAX_POWER, REACTIVE_POWER, REL_HUMIDITY, FREQUENCY, PHASE, EXTENDED_IDENTIFICATION, ADDRESS, NOT_SUPPORTED, USER_DEFINED;
+		ENERGY,
+		VOLUME,
+		MASS,
+		ON_TIME,
+		OPERATING_TIME,
+		POWER,
+		VOLUME_FLOW,
+		VOLUME_FLOW_EXT,
+		MASS_FLOW,
+		FLOW_TEMPERATURE,
+		RETURN_TEMPERATURE,
+		TEMPERATURE_DIFFERENCE,
+		EXTERNAL_TEMPERATURE,
+		PRESSURE,
+		DATE,
+		DATE_TIME,
+		VOLTAGE,
+		CURRENT,
+		AVERAGING_DURATION,
+		ACTUALITY_DURATION,
+		FABRICATION_NO,
+		MODEL_VERSION,
+		PARAMETER_SET_ID,
+		HARDWARE_VERSION,
+		FIRMWARE_VERSION,
+		ERROR_FLAGS,
+		CUSTOMER,
+		RESERVED,
+		OPERATING_TIME_BATTERY,
+		HCA,
+		REACTIVE_ENERGY,
+		TEMPERATURE_LIMIT,
+		MAX_POWER,
+		REACTIVE_POWER,
+		REL_HUMIDITY,
+		FREQUENCY,
+		PHASE,
+		EXTENDED_IDENTIFICATION,
+		ADDRESS,
+		NOT_SUPPORTED,
+		USER_DEFINED;
 	}
 
-	// Data Information Block that contains a DIF and optionally up to 10 DIFEs
-	private final byte[] dib;
-	// Value Information Block that contains a VIF and optionally up to 10 VIFEs
-	private final byte[] vib;
-	private final byte[] dataBytes;
-	private final Integer lvar;
-
-	private boolean decoded = false;
+	// // Data Information Block that contains a DIF and optionally up to 10 DIFEs
+	private byte[] dib;
+	// // Value Information Block that contains a VIF and optionally up to 10 VIFEs
+	private byte[] vib;
 
 	private Object dataValue;
 	private DataValueType dataValueType;
 
 	// DIB fields:
 	private FunctionField functionField;
-	private byte dataField;
+	// private int dataField;
 	private long storageNumber; // max is 41 bits
 	private int tariff; // max 20 bits
 	private short subunit; // max 10 bits
@@ -107,15 +153,276 @@ public class DataRecord {
 	private boolean dateTypeF = false;
 	private boolean dateTypeG = false;
 
-	DataRecord(byte[] dib, byte[] vib, byte[] data, Integer lvar) {
-		this.dib = dib;
-		this.vib = vib;
-		this.lvar = lvar;
-		dataBytes = data;
+	int decode(byte[] buffer, int offset, int length) throws DecodingException {
+
+		int i = offset;
+
+		// decode DIB
+		int ff = ((buffer[i] & 0x30) >> 4);
+		switch (ff) {
+		case 0:
+			functionField = FunctionField.INST_VAL;
+			break;
+		case 1:
+			functionField = FunctionField.MAX_VAL;
+			break;
+		case 2:
+			functionField = FunctionField.MIN_VAL;
+			break;
+		case 3:
+			functionField = FunctionField.ERROR_VAL;
+		}
+
+		int dataField = buffer[i] & 0x0f;
+		storageNumber = (buffer[i] & 0x40) >> 6;
+
+		subunit = 0;
+		tariff = 0;
+
+		while ((buffer[i++] & 0x80) == 0x80) {
+			subunit += (((buffer[i] & 0x40) >> 6) << (i - 1));
+			tariff += ((buffer[i] & 0x30) >> 4) << ((i - 1) * 2);
+			storageNumber += ((buffer[i] & 0x0f) << (((i - 1) * 4) + 1));
+		}
+
+		multiplierExponent = 0;
+
+		unit = null;
+
+		dib = Arrays.copyOfRange(buffer, offset, i);
+
+		// decode VIB
+
+		int vif = buffer[i++] & 0xff;
+
+		boolean decodeFurtherVifes = false;
+
+		if (vif == 0xfb) {
+			decodeAlternateExtendedVif(buffer[i]);
+			if ((buffer[i] & 0x80) == 0x80) {
+				decodeFurtherVifes = true;
+			}
+			i++;
+		}
+		else if ((vif & 0x7f) == 0x7c) {
+			i += decodeUserDefinedVif(buffer, i);
+			if ((vif & 0x80) == 0x80) {
+				decodeFurtherVifes = true;
+			}
+		}
+		else if (vif == 0xfd) {
+			decodeMainExtendedVif(buffer[i]);
+			if ((buffer[i] & 0x80) == 0x80) {
+				decodeFurtherVifes = true;
+			}
+			i++;
+		}
+		else if ((vif & 0x7f) == 0x7e) {
+			throw new DecodingException("VIF types 0x7E/FE not supported.");
+		}
+		else if ((vif & 0x7f) == 0x7f) {
+			throw new DecodingException("VIF types 0x7F/FF not supported.");
+		}
+		else {
+			decodeMainVif(vif);
+			if ((vif & 0x80) == 0x80) {
+				decodeFurtherVifes = true;
+			}
+		}
+
+		if (decodeFurtherVifes) {
+			while ((buffer[i++] & 0x80) == 0x80) {
+				// TODO these vifes should not be ignored!
+			}
+		}
+
+		vib = Arrays.copyOfRange(buffer, offset + dib.length, i);
+
+		switch (dataField) {
+		case 0x00:
+			dataValue = null;
+			dataValueType = DataValueType.NONE;
+			break;
+		case 0x01: /* INT8 */
+			dataValue = new Long(buffer[i++]);
+			dataValueType = DataValueType.LONG;
+			break;
+		case 0x02: /* INT16 */
+			if (dateTypeG) {
+				int day = (0x1f) & buffer[i];
+				int year1 = ((0xe0) & buffer[i++]) >> 5;
+				int month = (0x0f) & buffer[i];
+				int year2 = ((0xf0) & buffer[i++]) >> 1;
+				int year = (2000 + year1 + year2);
+
+				Calendar calendar = Calendar.getInstance();
+
+				calendar.set(year, month - 1, day, 0, 0, 0);
+
+				dataValue = calendar.getTime();
+				dataValueType = DataValueType.DATE;
+			}
+			else {
+				dataValue = new Long((buffer[i++] & 0xff) | ((buffer[i++] & 0xff) << 8));
+				dataValueType = DataValueType.LONG;
+			}
+			break;
+		case 0x03: /* INT24 */
+			if ((buffer[i + 2] & 0x80) == 0x80) {
+				// negative
+				dataValue = new Long(
+						(buffer[i++] & 0xff) | ((buffer[i++] & 0xff) << 8) | ((buffer[i++] & 0xff) << 16) | 0xff << 24);
+			}
+			else {
+				dataValue = new Long((buffer[i++] & 0xff) | ((buffer[i++] & 0xff) << 8) | ((buffer[i++] & 0xff) << 16));
+			}
+			dataValueType = DataValueType.LONG;
+			break;
+		case 0x04: /* INT32 */
+			if (dateTypeF) {
+				int min = (buffer[i++] & 0x3f);
+				int hour = (buffer[i] & 0x1f);
+				int yearh = (0x60 & buffer[i++]) >> 5;
+				int day = (buffer[i] & 0x1f);
+				int year1 = (0xe0 & buffer[i++]) >> 5;
+				int mon = (buffer[i] & 0x0f);
+				int year2 = (0xf0 & buffer[i++]) >> 1;
+
+				if (yearh == 0) {
+					yearh = 1;
+				}
+
+				int year = 1900 + 100 * yearh + year1 + year2;
+
+				Calendar calendar = Calendar.getInstance();
+
+				calendar.set(year, mon - 1, day, hour, min, 0);
+
+				dataValue = calendar.getTime();
+				dataValueType = DataValueType.DATE;
+			}
+			else {
+				dataValue = new Long((buffer[i++] & 0xff) | ((buffer[i++] & 0xff) << 8) | ((buffer[i++] & 0xff) << 16)
+						| ((buffer[i++] & 0xff) << 24));
+				dataValueType = DataValueType.LONG;
+			}
+			break;
+		case 0x05: /* FLOAT32 */
+			Float doubleDatavalue = ByteBuffer.wrap(buffer, i, 4).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+			i += 4;
+			dataValue = new Double(doubleDatavalue);
+			dataValueType = DataValueType.DOUBLE;
+			break;
+		case 0x06: /* INT48 */
+			if ((buffer[i + 2] & 0x80) == 0x80) {
+				// negative
+				dataValue = new Long((buffer[i++] & 0xff) | ((buffer[i++] & 0xff) << 8) | ((buffer[i++] & 0xff) << 16)
+						| ((buffer[i++] & 0xff) << 24) | (((long) buffer[i++] & 0xff) << 32)
+						| (((long) buffer[i++] & 0xff) << 40) | (0xffl << 48) | (0xffl << 56));
+			}
+			else {
+				dataValue = new Long((buffer[i++] & 0xff) | ((buffer[i++] & 0xff) << 8) | ((buffer[i++] & 0xff) << 16)
+						| ((buffer[i++] & 0xff) << 24) | (((long) buffer[i++] & 0xff) << 32)
+						| (((long) buffer[i++] & 0xff) << 40));
+			}
+			dataValueType = DataValueType.LONG;
+			break;
+		case 0x07: /* INT64 */
+			dataValue = new Long((buffer[i++] & 0xff) | ((buffer[i++] & 0xff) << 8) | ((buffer[i++] & 0xff) << 16)
+					| ((buffer[i++] & 0xff) << 24) | (((long) buffer[i++] & 0xff) << 32)
+					| (((long) buffer[i++] & 0xff) << 40) | (((long) buffer[i++] & 0xff) << 48)
+					| (((long) buffer[i++] & 0xff) << 56));
+			dataValueType = DataValueType.LONG;
+			break;
+		case 0x08: /* no data - selection for readout request */
+			dataValue = null;
+			dataValueType = DataValueType.NONE;
+			break;
+		case 0x09:
+			dataValue = new Bcd(Arrays.copyOfRange(buffer, i, i + 1));
+			dataValueType = DataValueType.BCD;
+			i += 1;
+			break;
+		case 0x0a:
+			dataValue = new Bcd(Arrays.copyOfRange(buffer, i, i + 2));
+			dataValueType = DataValueType.BCD;
+			i += 2;
+			break;
+		case 0x0b:
+			dataValue = new Bcd(Arrays.copyOfRange(buffer, i, i + 3));
+			dataValueType = DataValueType.BCD;
+			i += 3;
+			break;
+		case 0x0c:
+			dataValue = new Bcd(Arrays.copyOfRange(buffer, i, i + 4));
+			dataValueType = DataValueType.BCD;
+			i += 4;
+			break;
+		case 0x0e:
+			dataValue = new Bcd(Arrays.copyOfRange(buffer, i, i + 6));
+			dataValueType = DataValueType.BCD;
+			i += 6;
+			break;
+		case 0x0d:
+
+			int variableLength = buffer[i++] & 0xff;
+			int dataLength;
+
+			if (variableLength < 0xc0) {
+				dataLength = variableLength;
+			}
+			else if ((variableLength >= 0xc0) && (variableLength <= 0xc9)) {
+				dataLength = 2 * (variableLength - 0xc0);
+			}
+			else if ((variableLength >= 0xd0) && (variableLength <= 0xd9)) {
+				dataLength = 2 * (variableLength - 0xd0);
+			}
+			else if ((variableLength >= 0xe0) && (variableLength <= 0xef)) {
+				dataLength = variableLength - 0xe0;
+			}
+			else if (variableLength == 0xf8) {
+				dataLength = 4;
+			}
+			else {
+				throw new DecodingException("Unsupported LVAR Field: " + variableLength);
+			}
+
+			// TODO check this:
+			// if (variableLength >= 0xc0) {
+			// throw new DecodingException("Variable length (LVAR) field >= 0xc0: " + variableLength);
+			// }
+
+			char rawData[] = new char[dataLength];
+
+			for (int j = 0; j < dataLength; j++) {
+				rawData[j] = (char) buffer[i + dataLength - 1 - j];
+			}
+			i += dataLength;
+
+			dataValue = new String(rawData);
+			dataValueType = DataValueType.STRING;
+			break;
+		default:
+			throw new DecodingException("Unknown Data Field in DIF: " + HexConverter.toHexString((byte) dataField));
+		}
+
+		return i;
+
 	}
 
-	public Integer getLvar() {
-		return lvar;
+	int encode(byte[] buffer, int offset) {
+
+		int i = offset;
+
+		System.arraycopy(dib, 0, buffer, i, dib.length);
+
+		i += dib.length;
+
+		System.arraycopy(vib, 0, buffer, i, vib.length);
+
+		i += vib.length;
+
+		return i - offset;
 	}
 
 	/**
@@ -123,7 +430,7 @@ public class DataRecord {
 	 * 
 	 * @return a byte array containing the DIB
 	 */
-	public byte[] getDIB() {
+	public byte[] getDib() {
 		return dib;
 	}
 
@@ -132,17 +439,8 @@ public class DataRecord {
 	 * 
 	 * @return a byte array containing the VIB
 	 */
-	public byte[] getVIB() {
+	public byte[] getVib() {
 		return vib;
-	}
-
-	/**
-	 * Returns the data field of the data record as a byte array.
-	 * 
-	 * @return Returns the Data field of the data record as a byte array
-	 */
-	public byte[] getDataValueBytes() {
-		return dataBytes;
 	}
 
 	/**
@@ -153,16 +451,10 @@ public class DataRecord {
 	 * @return the data value
 	 */
 	public Object getDataValue() {
-		if (!decoded) {
-			throw new RuntimeException("Data record was not decoded.");
-		}
 		return dataValue;
 	}
 
 	public DataValueType getDataValueType() {
-		if (!decoded) {
-			throw new RuntimeException("Data record was not decoded.");
-		}
 		return dataValueType;
 	}
 
@@ -181,51 +473,26 @@ public class DataRecord {
 	}
 
 	public FunctionField getFunctionField() {
-		if (!decoded) {
-			throw new RuntimeException("Data record was not decoded.");
-		}
 		return functionField;
 	}
 
-	public byte getDataField() {
-		if (!decoded) {
-			throw new RuntimeException("Data record was not decoded.");
-		}
-		return dataField;
-	}
-
 	public long getStorageNumber() {
-		if (!decoded) {
-			throw new RuntimeException("Data record was not decoded.");
-		}
 		return storageNumber;
 	}
 
 	public int getTariff() {
-		if (!decoded) {
-			throw new RuntimeException("Data record was not decoded.");
-		}
 		return tariff;
 	}
 
 	public short getSubunit() {
-		if (!decoded) {
-			throw new RuntimeException("Data record was not decoded.");
-		}
 		return subunit;
 	}
 
 	public Description getDescription() {
-		if (!decoded) {
-			throw new RuntimeException("Data record was not decoded.");
-		}
 		return description;
 	}
 
 	public String getUserDefinedDescription() {
-		if (!decoded) {
-			throw new RuntimeException("Data record was not decoded.");
-		}
 		if (description == Description.USER_DEFINED) {
 			return userDefinedDescription;
 		}
@@ -241,207 +508,16 @@ public class DataRecord {
 	 * @return the exponent of the multiplier.
 	 */
 	public int getMultiplierExponent() {
-		if (!decoded) {
-			throw new RuntimeException("Data record was not decoded.");
-		}
 		return multiplierExponent;
 	}
 
 	public DlmsUnit getUnit() {
-		if (!decoded) {
-			throw new RuntimeException("Data record was not decoded.");
-		}
 		return unit;
 	}
 
-	public void decode() throws DecodingException {
-
-		// decode DIB
-		int ff = ((dib[0] & 0x30) >> 4);
-		switch (ff) {
-		case 0:
-			functionField = FunctionField.INST_VAL;
-			break;
-		case 1:
-			functionField = FunctionField.MAX_VAL;
-			break;
-		case 2:
-			functionField = FunctionField.MIN_VAL;
-			break;
-		case 3:
-			functionField = FunctionField.ERROR_VAL;
-		}
-
-		dataField = (byte) (dib[0] & 0x0f);
-		storageNumber = (dib[0] & 0x40) >> 6;
-
-		subunit = 0;
-		tariff = 0;
-
-		for (int i = 1; i < dib.length; i++) {
-			subunit += (((dib[i] & 0x40) >> 6) << (i - 1));
-			tariff += ((dib[i] & 0x30) >> 4) << ((i - 1) * 2);
-			storageNumber += ((dib[i] & 0x0f) << (((i - 1) * 4) + 1));
-		}
-
-		multiplierExponent = 0;
-
-		unit = null;
-
-		// decode VIB
-		if (vib[0] == (byte) 0xFB) {
-			decodeAlternateExtendedVif();
-		}
-		else if ((vib[0] & 0x7F) == (byte) 0x7C) {
-			/**
-			 * VIF equal to "E111 1100", allows user definable VIF´s (in plain ASCII-String)
-			 */
-			decodeUserDefinedVif();
-		}
-		else if (vib[0] == (byte) 0xFD) {
-			decodeMainExtendedVif();
-		}
-		else if ((vib[0] & 0x7F) == (byte) 0x7E) {
-			throw new DecodingException("VIF types 0x7E/FE not supported.");
-		}
-		else if ((vib[0] & 0x7F) == (byte) 0x7F) {
-			throw new DecodingException("VIF types 0x7F/FF not supported.");
-		}
-		else {
-			// primary VIF
-			decodeMainVif();
-		}
-
-		// decode dataField
-		switch (dataField) {
-		case 0x00:
-			dataValue = null;
-			dataValueType = DataValueType.NONE;
-			break;
-		case 0x01: /* INT8 */
-			dataValue = new Long(dataBytes[0]);
-			dataValueType = DataValueType.LONG;
-			break;
-		case 0x02: /* INT16 */
-			if (dateTypeG) {
-				int day = (0x1f) & dataBytes[0];
-				int month = (0x0f) & dataBytes[1];
-				int year1 = ((0xe0) & dataBytes[0]) >> 5;
-				int year2 = ((0xf0) & dataBytes[1]) >> 1;
-				int year = (2000 + year1 + year2);
-
-				Calendar calendar = Calendar.getInstance();
-
-				calendar.set(year, month - 1, day, 0, 0, 0);
-
-				dataValue = calendar.getTime();
-				dataValueType = DataValueType.DATE;
-			}
-			else {
-				dataValue = new Long((short) ((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8)));
-				dataValueType = DataValueType.LONG;
-			}
-			break;
-		case 0x03: /* INT24 */
-			if ((dataBytes[2] & 0x80) == 0x80) {
-				// negative
-				dataValue = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8)
-						| ((dataBytes[2] & 0xff) << 16) | 0xff << 24);
-			}
-			else {
-				dataValue = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8)
-						| ((dataBytes[2] & 0xff) << 16));
-			}
-			dataValueType = DataValueType.LONG;
-			break;
-		case 0x04: /* INT32 */
-			if (dateTypeF) {
-				int min = (dataBytes[0] & 0x3f);
-				int hour = (dataBytes[1] & 0x1f);
-				int day = (dataBytes[2] & 0x1f);
-				int mon = (dataBytes[3] & 0x0f);
-				int year1 = (0xe0 & dataBytes[2]) >> 5;
-				int year2 = (0xf0 & dataBytes[3]) >> 1;
-				int yearh = (0x60 & dataBytes[1]) >> 5;
-
-				if (yearh == 0) {
-					yearh = 1;
-				}
-
-				int year = 1900 + 100 * yearh + year1 + year2;
-
-				Calendar calendar = Calendar.getInstance();
-
-				calendar.set(year, mon - 1, day, hour, min, 0);
-
-				dataValue = calendar.getTime();
-				dataValueType = DataValueType.DATE;
-			}
-			else {
-				dataValue = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8)
-						| ((dataBytes[2] & 0xff) << 16) | ((dataBytes[3] & 0xff) << 24));
-				dataValueType = DataValueType.LONG;
-			}
-			break;
-		case 0x06: /* INT48 */
-			if ((dataBytes[2] & 0x80) == 0x80) {
-				// negative
-				dataValue = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8)
-						| ((dataBytes[2] & 0xff) << 16) | ((dataBytes[3] & 0xff) << 24) | ((dataBytes[4] & 0xff) << 32)
-						| ((dataBytes[5] & 0xff) << 40) | (0xffl << 48) | (0xffl << 56));
-			}
-			else {
-				dataValue = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8)
-						| ((dataBytes[2] & 0xff) << 16) | ((dataBytes[3] & 0xff) << 24)
-						| (((long) dataBytes[4] & 0xff) << 32) | (((long) dataBytes[5] & 0xff) << 40));
-			}
-			dataValueType = DataValueType.LONG;
-			break;
-		case 0x07: /* INT64 */
-			dataValue = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8) | ((dataBytes[2] & 0xff) << 16)
-					| ((dataBytes[3] & 0xff) << 24) | (((long) dataBytes[4] & 0xff) << 32)
-					| (((long) dataBytes[5] & 0xff) << 40) | (((long) dataBytes[6] & 0xff) << 48)
-					| (((long) dataBytes[7] & 0xff) << 56));
-			dataValueType = DataValueType.LONG;
-			break;
-		case 0x08: /* no data - selection for readout request */
-			dataValue = null;
-			dataValueType = DataValueType.NONE;
-			break;
-		case 0x09:
-		case 0x0a:
-		case 0x0b:
-		case 0x0c:
-		case 0x0e:
-			dataValue = new Bcd(dataBytes);
-			dataValueType = DataValueType.BCD;
-			break;
-		case 0x0d: /* variable length - LVAR */
-			if (lvar < 0xc0) {
-				char rawData[] = new char[dataBytes.length];
-
-				for (int i = 0; i < dataBytes.length; i++) {
-					rawData[i] = (char) dataBytes[dataBytes.length - 1 - i];
-				}
-
-				dataValue = new String(rawData);
-				dataValueType = DataValueType.STRING;
-			}
-			else {
-				throw new DecodingException("LVAR field > 0xc0: " + lvar);
-			}
-			break;
-		default:
-			throw new DecodingException("Unknown Data Field in DIF: " + HexConverter.getHexStringFromByte(dataField));
-		}
-
-		decoded = true;
-
-	}
-
-	private void decodeTimeUnit() {
-		if ((vib[0] & 0x02) == 0) {
-			if ((vib[0] & 0x01) == 0) {
+	private void decodeTimeUnit(int vif) {
+		if ((vif & 0x02) == 0) {
+			if ((vif & 0x01) == 0) {
 				unit = DlmsUnit.SECOND;
 			}
 			else {
@@ -449,7 +525,7 @@ public class DataRecord {
 			}
 		}
 		else {
-			if ((vib[0] & 0x01) == 0) {
+			if ((vif & 0x01) == 0) {
 				unit = DlmsUnit.HOUR;
 			}
 			else {
@@ -458,73 +534,66 @@ public class DataRecord {
 		}
 	}
 
-	/**
-	 * Convert Hex to ASCII and reverse the letters
-	 * 
-	 * @throws DecodingException
-	 */
-	private void decodeUserDefinedVif() throws DecodingException {
+	private int decodeUserDefinedVif(byte[] buffer, int offset) throws DecodingException {
+
+		int length = buffer[offset];
+		StringBuilder sb = new StringBuilder();
+		for (int i = offset + length; i > offset; i--) {
+			sb.append((char) buffer[i]);
+		}
+
 		description = Description.USER_DEFINED;
+		userDefinedDescription = sb.toString();
 
-		try {
-			userDefinedDescription = new String(vib, "ASCII");
-		} catch (UnsupportedEncodingException e) {
-			throw new DecodingException("User defined description is not valid ASCII string.");
-		}
+		return length + 1;
 
-		// remove the first vib from string
-		if (userDefinedDescription.length() > 0) {
-			userDefinedDescription = userDefinedDescription.substring(1);
-		}
-
-		userDefinedDescription = new StringBuilder(userDefinedDescription).reverse().toString();
 	}
 
-	private void decodeMainVif() {
+	private void decodeMainVif(int vif) {
 		description = Description.NOT_SUPPORTED;
 
-		if ((vib[0] & 0x40) == 0) {
+		if ((vif & 0x40) == 0) {
 			// E0
-			if ((vib[0] & 0x20) == 0) {
+			if ((vif & 0x20) == 0) {
 				// E00
-				if ((vib[0] & 0x10) == 0) {
+				if ((vif & 0x10) == 0) {
 					// E000
-					if ((vib[0] & 0x08) == 0) {
+					if ((vif & 0x08) == 0) {
 						// E000 0
 						description = Description.ENERGY;
-						multiplierExponent = (vib[0] & 0x07) - 3;
+						multiplierExponent = (vif & 0x07) - 3;
 						unit = DlmsUnit.WATT_HOUR;
 					}
 					else {
 						// E000 1
 						description = Description.ENERGY;
-						multiplierExponent = vib[0] & 0x07;
+						multiplierExponent = vif & 0x07;
 						unit = DlmsUnit.JOULE;
 					}
 				}
 				else {
 					// E001
-					if ((vib[0] & 0x08) == 0) {
+					if ((vif & 0x08) == 0) {
 						// E001 0
 						description = Description.VOLUME;
-						multiplierExponent = (vib[0] & 0x07) - 6;
+						multiplierExponent = (vif & 0x07) - 6;
 						unit = DlmsUnit.CUBIC_METRE;
 					}
 					else {
 						// E001 1
 						description = Description.MASS;
-						multiplierExponent = (vib[0] & 0x07) - 3;
+						multiplierExponent = (vif & 0x07) - 3;
 						unit = DlmsUnit.KILOGRAM;
 					}
 				}
 			}
 			else {
 				// E01
-				if ((vib[0] & 0x10) == 0) {
+				if ((vif & 0x10) == 0) {
 					// E010
-					if ((vib[0] & 0x08) == 0) {
+					if ((vif & 0x08) == 0) {
 						// E010 0
-						if ((vib[0] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							// E010 00
 							description = Description.ON_TIME;
 						}
@@ -532,27 +601,27 @@ public class DataRecord {
 							// E010 01
 							description = Description.OPERATING_TIME;
 						}
-						decodeTimeUnit();
+						decodeTimeUnit(vif);
 					}
 					else {
 						// E010 1
 						description = Description.POWER;
-						multiplierExponent = (vib[0] & 0x07) - 3;
+						multiplierExponent = (vif & 0x07) - 3;
 						unit = DlmsUnit.WATT;
 					}
 				}
 				else {
 					// E011
-					if ((vib[0] & 0x08) == 0) {
+					if ((vif & 0x08) == 0) {
 						// E011 0
 						description = Description.POWER;
-						multiplierExponent = vib[0] & 0x07;
+						multiplierExponent = vif & 0x07;
 						unit = DlmsUnit.JOULE_PER_HOUR;
 					}
 					else {
 						// E011 1
 						description = Description.VOLUME_FLOW;
-						multiplierExponent = (vib[0] & 0x07) - 6;
+						multiplierExponent = (vif & 0x07) - 6;
 						unit = DlmsUnit.CUBIC_METRE_PER_HOUR;
 					}
 				}
@@ -560,43 +629,43 @@ public class DataRecord {
 		}
 		else {
 			// E1
-			if ((vib[0] & 0x20) == 0) {
+			if ((vif & 0x20) == 0) {
 				// E10
-				if ((vib[0] & 0x10) == 0) {
+				if ((vif & 0x10) == 0) {
 					// E100
-					if ((vib[0] & 0x08) == 0) {
+					if ((vif & 0x08) == 0) {
 						// E100 0
 						description = Description.VOLUME_FLOW_EXT;
-						multiplierExponent = (vib[0] & 0x07) - 7;
+						multiplierExponent = (vif & 0x07) - 7;
 						unit = DlmsUnit.CUBIC_METRE_PER_MINUTE;
 					}
 					else {
 						// E100 1
 						description = Description.VOLUME_FLOW_EXT;
-						multiplierExponent = (vib[0] & 0x07) - 9;
+						multiplierExponent = (vif & 0x07) - 9;
 						unit = DlmsUnit.CUBIC_METRE_PER_SECOND;
 					}
 				}
 				else {
 					// E101
-					if ((vib[0] & 0x08) == 0) {
+					if ((vif & 0x08) == 0) {
 						// E101 0
 						description = Description.MASS_FLOW;
-						multiplierExponent = (vib[0] & 0x07) - 3;
+						multiplierExponent = (vif & 0x07) - 3;
 						unit = DlmsUnit.KILOGRAM_PER_HOUR;
 					}
 					else {
 						// E101 1
-						if ((vib[0] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							// E101 10
 							description = Description.FLOW_TEMPERATURE;
-							multiplierExponent = (vib[0] & 0x03) - 3;
+							multiplierExponent = (vif & 0x03) - 3;
 							unit = DlmsUnit.DEGREE_CELSIUS;
 						}
 						else {
 							// E101 11
 							description = Description.RETURN_TEMPERATURE;
-							multiplierExponent = (vib[0] & 0x03) - 3;
+							multiplierExponent = (vif & 0x03) - 3;
 							unit = DlmsUnit.DEGREE_CELSIUS;
 						}
 					}
@@ -604,36 +673,36 @@ public class DataRecord {
 			}
 			else {
 				// E11
-				if ((vib[0] & 0x10) == 0) {
+				if ((vif & 0x10) == 0) {
 					// E110
-					if ((vib[0] & 0x08) == 0) {
+					if ((vif & 0x08) == 0) {
 						// E110 0
-						if ((vib[0] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							// E110 00
 							description = Description.TEMPERATURE_DIFFERENCE;
-							multiplierExponent = (vib[0] & 0x03) - 3;
+							multiplierExponent = (vif & 0x03) - 3;
 							unit = DlmsUnit.KELVIN;
 						}
 						else {
 							// E110 01
 							description = Description.EXTERNAL_TEMPERATURE;
-							multiplierExponent = (vib[0] & 0x03) - 3;
+							multiplierExponent = (vif & 0x03) - 3;
 							unit = DlmsUnit.DEGREE_CELSIUS;
 						}
 					}
 					else {
 						// E110 1
-						if ((vib[0] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							// E110 10
 							description = Description.PRESSURE;
-							multiplierExponent = (vib[0] & 0x03) - 3;
+							multiplierExponent = (vif & 0x03) - 3;
 							unit = DlmsUnit.BAR;
 						}
 						else {
 							// E110 11
-							if ((vib[0] & 0x02) == 0) {
+							if ((vif & 0x02) == 0) {
 								// E110 110
-								if ((vib[0] & 0x01) == 0) {
+								if ((vif & 0x01) == 0) {
 									// E110 1100
 									description = Description.DATE;
 									dateTypeG = true;
@@ -646,7 +715,7 @@ public class DataRecord {
 							}
 							else {
 								// E110 111
-								if ((vib[0] & 0x01) == 0) {
+								if ((vif & 0x01) == 0) {
 									// E110 1110
 									description = Description.HCA;
 									unit = DlmsUnit.RESERVED;
@@ -662,23 +731,23 @@ public class DataRecord {
 				}
 				else {
 					// E111
-					if ((vib[0] & 0x08) == 0) {
+					if ((vif & 0x08) == 0) {
 						// E111 0
-						if ((vib[0] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							description = Description.AVERAGING_DURATION;
 						}
 						else {
 							description = Description.ACTUALITY_DURATION;
 						}
-						decodeTimeUnit();
+						decodeTimeUnit(vif);
 					}
 					else {
 						// E111 1
-						if ((vib[0] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							// E111 10
-							if ((vib[0] & 0x02) == 0) {
+							if ((vif & 0x02) == 0) {
 								// E111 100
-								if ((vib[0] & 0x01) == 0) {
+								if ((vif & 0x01) == 0) {
 									// E111 1000
 									description = Description.FABRICATION_NO;
 								}
@@ -689,21 +758,22 @@ public class DataRecord {
 							}
 							else {
 								// E111 101
-								if ((vib[0] & 0x01) == 0) {
+								if ((vif & 0x01) == 0) {
 									description = Description.ADDRESS;
 								}
 								else {
 									// E111 1011
 									// Codes used with extension indicator 0xFB (table 29 of DIN EN 13757-3:2011)
-									decodeAlternateExtendedVif();
+									throw new IllegalArgumentException(
+											"Trying to decode a mainVIF even though it is an alternate extended vif");
 								}
 							}
 						}
 						else {
 							// E111 11
-							if ((vib[0] & 0x02) == 0) {
+							if ((vif & 0x02) == 0) {
 								// E111 110
-								if ((vib[0] & 0x01) == 0) {
+								if ((vif & 0x01) == 0) {
 									// E111 1100
 									// Extension indicator 0xFC: VIF is given in following string
 									description = Description.NOT_SUPPORTED;
@@ -712,7 +782,8 @@ public class DataRecord {
 									// E111 1101
 									// Extension indicator 0xFD: main VIFE-code extension table (table 28 of DIN EN
 									// 13757-3:2011)
-									decodeMainExtendedVif();
+									throw new IllegalArgumentException(
+											"Trying to decode a mainVIF even though it is a main extended vif");
 
 								}
 							}
@@ -728,20 +799,20 @@ public class DataRecord {
 	}
 
 	// implements table 28 of DIN EN 13757-3:2011
-	private void decodeMainExtendedVif() {
-		if ((vib[1] & 0x70) == 0x40) {
+	private void decodeMainExtendedVif(byte vif) {
+		if ((vif & 0x70) == 0x40) {
 			description = Description.VOLTAGE;
-			multiplierExponent = (vib[1] & 0x0f) - 9;
+			multiplierExponent = (vif & 0x0f) - 9;
 			unit = DlmsUnit.VOLT;
 		}
-		else if ((vib[1] & 0x70) == 0x50) {
+		else if ((vif & 0x70) == 0x50) {
 			description = Description.CURRENT;
-			multiplierExponent = (vib[1] & 0x0f) - 12;
+			multiplierExponent = (vif & 0x0f) - 12;
 			unit = DlmsUnit.AMPERE;
 		}
-		else if ((vib[1] & 0x7c) == 0x6c) {
+		else if ((vif & 0x7c) == 0x6c) {
 			description = Description.OPERATING_TIME_BATTERY;
-			switch (vib[1] & 0x03) {
+			switch (vif & 0x03) {
 			case 0:
 				unit = DlmsUnit.HOUR;
 				break;
@@ -755,25 +826,25 @@ public class DataRecord {
 				unit = DlmsUnit.YEAR;
 			}
 		}
-		else if ((vib[1] & 0x7f) == 0x0b) {
+		else if ((vif & 0x7f) == 0x0b) {
 			description = Description.PARAMETER_SET_ID;
 		}
-		else if ((vib[1] & 0x7f) == 0x0c) {
+		else if ((vif & 0x7f) == 0x0c) {
 			description = Description.MODEL_VERSION;
 		}
-		else if ((vib[1] & 0x7f) == 0x0d) {
+		else if ((vif & 0x7f) == 0x0d) {
 			description = Description.HARDWARE_VERSION;
 		}
-		else if ((vib[1] & 0x7f) == 0x0e) {
+		else if ((vif & 0x7f) == 0x0e) {
 			description = Description.FIRMWARE_VERSION;
 		}
-		else if ((vib[1] & 0x7f) == 0x11) {
+		else if ((vif & 0x7f) == 0x11) {
 			description = Description.CUSTOMER;
 		}
-		else if ((vib[1] & 0x7f) == 0x17) {
+		else if ((vif & 0x7f) == 0x17) {
 			description = Description.ERROR_FLAGS;
 		}
-		else if ((vib[1] & 0x7f) >= 0x77) {
+		else if ((vif & 0x7f) >= 0x77) {
 			description = Description.RESERVED;
 		}
 		else {
@@ -782,29 +853,29 @@ public class DataRecord {
 	}
 
 	// implements table 29 of DIN EN 13757-3:2011
-	private void decodeAlternateExtendedVif() {
+	private void decodeAlternateExtendedVif(byte vif) {
 		description = Description.NOT_SUPPORTED; // default value
 
-		if ((vib[1] & 0x40) == 0) {
+		if ((vif & 0x40) == 0) {
 			// E0
-			if ((vib[1] & 0x20) == 0) {
+			if ((vif & 0x20) == 0) {
 				// E00
-				if ((vib[1] & 0x10) == 0) {
+				if ((vif & 0x10) == 0) {
 					// E000
-					if ((vib[1] & 0x08) == 0) {
+					if ((vif & 0x08) == 0) {
 						// E000 0
-						if ((vib[1] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							// E000 00
-							if ((vib[1] & 0x02) == 0) {
+							if ((vif & 0x02) == 0) {
 								// E000 000
 								description = Description.ENERGY;
-								multiplierExponent = 5 + (vib[1] & 0x01);
+								multiplierExponent = 5 + (vif & 0x01);
 								unit = DlmsUnit.WATT_HOUR;
 							}
 							else {
 								// E000 001
 								description = Description.REACTIVE_ENERGY;
-								multiplierExponent = 3 + (vib[1] & 0x01);
+								multiplierExponent = 3 + (vif & 0x01);
 								unit = DlmsUnit.VAR_HOUR;
 							}
 
@@ -816,12 +887,12 @@ public class DataRecord {
 					}
 					else {
 						// E000 1
-						if ((vib[1] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							// E000 10
-							if ((vib[1] & 0x02) == 0) {
+							if ((vif & 0x02) == 0) {
 								// E000 100
 								description = Description.ENERGY;
-								multiplierExponent = 8 + (vib[1] & 0x01);
+								multiplierExponent = 8 + (vif & 0x01);
 								unit = DlmsUnit.JOULE;
 							}
 							else {
@@ -833,21 +904,21 @@ public class DataRecord {
 						else {
 							// E000 11
 							description = Description.ENERGY;
-							multiplierExponent = 5 + (vib[1] & 0x03);
+							multiplierExponent = 5 + (vif & 0x03);
 							unit = DlmsUnit.CALORIFIC_VALUE;
 						}
 					}
 				}
 				else {
 					// E001
-					if ((vib[1] & 0x08) == 0) {
+					if ((vif & 0x08) == 0) {
 						// E001 0
-						if ((vib[1] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							// E001 00
-							if ((vib[1] & 0x02) == 0) {
+							if ((vif & 0x02) == 0) {
 								// E001 000
 								description = Description.VOLUME;
-								multiplierExponent = 2 + (vib[1] & 0x01);
+								multiplierExponent = 2 + (vif & 0x01);
 								unit = DlmsUnit.CUBIC_METRE;
 							}
 							else {
@@ -858,24 +929,24 @@ public class DataRecord {
 						else {
 							// E001 01
 							description = Description.REACTIVE_POWER;
-							multiplierExponent = (vib[1] & 0x03);
+							multiplierExponent = (vif & 0x03);
 							unit = DlmsUnit.VAR;
 						}
 					}
 					else {
 						// E001 1
-						if ((vib[1] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							// E001 10
-							if ((vib[1] & 0x02) == 0) {
+							if ((vif & 0x02) == 0) {
 								// E001 100
 								description = Description.MASS;
-								multiplierExponent = 5 + (vib[1] & 0x01);
+								multiplierExponent = 5 + (vif & 0x01);
 								unit = DlmsUnit.KILOGRAM;
 							}
 							else {
 								// E001 101
 								description = Description.REL_HUMIDITY;
-								multiplierExponent = -1 + (vib[1] & 0x01);
+								multiplierExponent = -1 + (vif & 0x01);
 								unit = DlmsUnit.PERCENTAGE;
 							}
 
@@ -890,15 +961,15 @@ public class DataRecord {
 			}
 			else {
 				// E01
-				if ((vib[1] & 0x10) == 0) {
+				if ((vif & 0x10) == 0) {
 					// E010
-					if ((vib[1] & 0x08) == 0) {
+					if ((vif & 0x08) == 0) {
 						// E010 0
-						if ((vib[1] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							// E010 00
-							if ((vib[1] & 0x02) == 0) {
+							if ((vif & 0x02) == 0) {
 								// E010 000
-								if ((vib[1] & 0x01) == 0) {
+								if ((vif & 0x01) == 0) {
 									// E010 0000
 									description = Description.VOLUME;
 									multiplierExponent = 0;
@@ -915,15 +986,15 @@ public class DataRecord {
 								// E010 001
 								// outdated value !
 								description = Description.VOLUME;
-								multiplierExponent = -1 + (vib[1] & 0x01);
+								multiplierExponent = -1 + (vif & 0x01);
 								unit = DlmsUnit.US_GALLON;
 							}
 						}
 						else {
 							// E010 01
-							if ((vib[1] & 0x02) == 0) {
+							if ((vif & 0x02) == 0) {
 								// E010 010
-								if ((vib[1] & 0x01) == 0) {
+								if ((vif & 0x01) == 0) {
 									// E010 0100
 									// outdated value !
 									description = Description.VOLUME_FLOW;
@@ -940,7 +1011,7 @@ public class DataRecord {
 							}
 							else {
 								// E010 011
-								if ((vib[1] & 0x01) == 0) {
+								if ((vif & 0x01) == 0) {
 									// E010 0110
 									// outdated value !
 									description = Description.VOLUME_FLOW;
@@ -957,16 +1028,16 @@ public class DataRecord {
 					}
 					else {
 						// E010 1
-						if ((vib[1] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							// E010 10
-							if ((vib[1] & 0x02) == 0) {
+							if ((vif & 0x02) == 0) {
 								// E010 100
 								description = Description.POWER;
-								multiplierExponent = 5 + (vib[1] & 0x01);
+								multiplierExponent = 5 + (vif & 0x01);
 								unit = DlmsUnit.WATT;
 							}
 							else {
-								if ((vib[1] & 0x01) == 0) {
+								if ((vif & 0x01) == 0) {
 									// E010 1010
 									description = Description.PHASE;
 									multiplierExponent = -1; // is -1 or 0 correct ??
@@ -983,21 +1054,21 @@ public class DataRecord {
 						else {
 							// E010 11
 							description = Description.FREQUENCY;
-							multiplierExponent = -3 + (vib[1] & 0x03);
+							multiplierExponent = -3 + (vif & 0x03);
 							unit = DlmsUnit.HERTZ;
 						}
 					}
 				}
 				else {
 					// E011
-					if ((vib[1] & 0x08) == 0) {
+					if ((vif & 0x08) == 0) {
 						// E011 0
-						if ((vib[1] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							// E011 00
-							if ((vib[1] & 0x02) == 0) {
+							if ((vif & 0x02) == 0) {
 								// E011 000
 								description = Description.POWER;
-								multiplierExponent = 8 + (vib[1] & 0x01);
+								multiplierExponent = 8 + (vif & 0x01);
 								unit = DlmsUnit.JOULE_PER_HOUR;
 							}
 							else {
@@ -1019,32 +1090,32 @@ public class DataRecord {
 		}
 		else {
 			// E1
-			if ((vib[1] & 0x20) == 0) {
+			if ((vif & 0x20) == 0) {
 				// E10
-				if ((vib[1] & 0x10) == 0) {
+				if ((vif & 0x10) == 0) {
 					// E100
 					description = Description.NOT_SUPPORTED;
 				}
 				else {
 					// E101
-					if ((vib[1] & 0x08) == 0) {
+					if ((vif & 0x08) == 0) {
 						// E101 0
 						description = Description.NOT_SUPPORTED;
 					}
 					else {
 						// E101 1
-						if ((vib[1] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							// E101 10
 							// outdated value !
 							description = Description.FLOW_TEMPERATURE;
-							multiplierExponent = (vib[1] & 0x03) - 3;
+							multiplierExponent = (vif & 0x03) - 3;
 							unit = DlmsUnit.DEGREE_FAHRENHEIT;
 						}
 						else {
 							// E101 11
 							// outdated value !
 							description = Description.RETURN_TEMPERATURE;
-							multiplierExponent = (vib[1] & 0x03) - 3;
+							multiplierExponent = (vif & 0x03) - 3;
 							unit = DlmsUnit.DEGREE_FAHRENHEIT;
 						}
 					}
@@ -1052,22 +1123,22 @@ public class DataRecord {
 			}
 			else {
 				// E11
-				if ((vib[1] & 0x10) == 0) {
+				if ((vif & 0x10) == 0) {
 					// E110
-					if ((vib[1] & 0x08) == 0) {
+					if ((vif & 0x08) == 0) {
 						// E110 0
-						if ((vib[1] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							// E110 00
 							// outdated value !
 							description = Description.TEMPERATURE_DIFFERENCE;
-							multiplierExponent = (vib[1] & 0x03) - 3;
+							multiplierExponent = (vif & 0x03) - 3;
 							unit = DlmsUnit.DEGREE_FAHRENHEIT;
 						}
 						else {
 							// E110 01
 							// outdated value !
 							description = Description.FLOW_TEMPERATURE;
-							multiplierExponent = (vib[1] & 0x03) - 3;
+							multiplierExponent = (vif & 0x03) - 3;
 							unit = DlmsUnit.DEGREE_FAHRENHEIT;
 						}
 					}
@@ -1078,26 +1149,26 @@ public class DataRecord {
 				}
 				else {
 					// E111
-					if ((vib[1] & 0x08) == 0) {
+					if ((vif & 0x08) == 0) {
 						// E111 0
-						if ((vib[1] & 0x04) == 0) {
+						if ((vif & 0x04) == 0) {
 							// E111 00
 							// outdated value !
 							description = Description.TEMPERATURE_LIMIT;
-							multiplierExponent = (vib[1] & 0x03) - 3;
+							multiplierExponent = (vif & 0x03) - 3;
 							unit = DlmsUnit.DEGREE_FAHRENHEIT;
 						}
 						else {
 							// E111 01
 							description = Description.TEMPERATURE_LIMIT;
-							multiplierExponent = (vib[1] & 0x03) - 3;
+							multiplierExponent = (vif & 0x03) - 3;
 							unit = DlmsUnit.DEGREE_CELSIUS;
 						}
 					}
 					else {
 						// E111 1
 						description = Description.MAX_POWER;
-						multiplierExponent = (vib[1] & 0x07) - 3;
+						multiplierExponent = (vif & 0x07) - 3;
 						unit = DlmsUnit.WATT;
 					}
 				}
@@ -1112,13 +1183,8 @@ public class DataRecord {
 
 		StringBuilder builder = new StringBuilder();
 
-		builder.append("DIB:").append(composeHexStringFromByteArray(dib));
-		builder.append(", VIB:").append(composeHexStringFromByteArray(vib));
-
-		if (!decoded) {
-			builder.append(" -> DataRecord has not been decoded.");
-			return builder.toString();
-		}
+		builder.append("DIB:").append(HexConverter.toHexString(dib));
+		builder.append(", VIB:").append(HexConverter.toHexString(vib));
 
 		builder.append(" -> descr:").append(description);
 		if (description == Description.USER_DEFINED) {
@@ -1175,16 +1241,6 @@ public class DataRecord {
 
 		return builder.toString();
 
-	}
-
-	private static String composeHexStringFromByteArray(byte[] data) {
-		StringBuilder builder = new StringBuilder(data.length * 2);
-
-		for (byte element : data) {
-			builder.append(String.format("%02x", 0xff & element));
-		}
-
-		return builder.toString();
 	}
 
 }

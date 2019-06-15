@@ -20,11 +20,11 @@
  */
 package org.openmuc.jmbus;
 
-import gnu.io.SerialPort;
-
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import gnu.io.SerialPort;
 
 /**
  * 
@@ -93,8 +93,8 @@ public class WMBusSapRadioCrafts extends AbstractWMBusSap {
 								executor.execute(new Runnable() {
 									@Override
 									public void run() {
-										listener.newMessage(new WMBusDataMessage(messageBytes, signalStrengthInDBm,
-												keyMap));
+										listener.newMessage(
+												new WMBusMessage(messageBytes, signalStrengthInDBm, keyMap));
 									}
 								});
 

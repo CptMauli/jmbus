@@ -40,7 +40,7 @@ public interface WMBusSap {
 
 	/**
 	 * Stores a pair of secondary address and cryptographic key. The stored keys are automatically used to decrypt
-	 * messages when {@link WMBusDataMessage#decode()} is called.
+	 * messages when {@link WMBusMessage#decode()} is called.
 	 * 
 	 * @param address
 	 *            the secondary address

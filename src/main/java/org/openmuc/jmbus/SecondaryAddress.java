@@ -20,6 +20,7 @@
  */
 package org.openmuc.jmbus;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class SecondaryAddress {
@@ -60,6 +61,25 @@ public class SecondaryAddress {
 		return i;
 	}
 
+	private static byte[] encodeManufacturerId(String manufactureId) {
+
+		byte[] mfId = new byte[] { 0, 0 };
+
+		if (manufactureId.length() == 3) {
+
+			manufactureId = manufactureId.toUpperCase();
+
+			char[] manufactureIdArray = manufactureId.toCharArray();
+			int manufacturerIdAsInt = (manufactureIdArray[0] - 64) * 32 * 32;
+			manufacturerIdAsInt += (manufactureIdArray[1] - 64) * 32;
+			manufacturerIdAsInt += (manufactureIdArray[1] - 64);
+
+			mfId = ByteBuffer.allocate(4).putInt(manufacturerIdAsInt).array();
+		}
+
+		return mfId;
+	}
+
 	private int decodeDeviceId(byte[] buffer, int i) {
 		byte[] idArray = new byte[4];
 		idArray[0] = buffer[i++];
@@ -76,6 +96,25 @@ public class SecondaryAddress {
 
 	public static SecondaryAddress getFromWMBusLinkLayerHeader(byte[] buffer, int offset) {
 		return new SecondaryAddress(buffer, offset, false);
+	}
+
+	public static SecondaryAddress getFromHexString(String hexString) throws NumberFormatException {
+		byte[] buffer = HexConverter.fromShortHexString(hexString);
+		return new SecondaryAddress(buffer, 0, true);
+	}
+
+	public static SecondaryAddress getFromManufactureId(byte[] idNumber, String manufactureId, byte version, byte media)
+			throws NumberFormatException {
+
+		if (idNumber.length == 8) {
+			byte[] mfId = encodeManufacturerId(manufactureId);
+			byte[] buffer = ByteBuffer.allocate(idNumber.length + mfId.length + 1 + 1).put(idNumber).put(mfId)
+					.put(version).put(media).array();
+			return new SecondaryAddress(buffer, 0, true);
+		}
+		else {
+			throw new NumberFormatException("Wrong length of idNumber. Allowed length is 8.");
+		}
 	}
 
 	public byte[] asByteArray() {
@@ -115,11 +154,11 @@ public class SecondaryAddress {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("manufacturer ID:").append(manufacturerId).append(", device ID:").append(deviceId)
-				.append(", device version:").append(version).append(", device type:").append(deviceType)
-				.append(", as bytes:");
+		builder.append("manufacturer ID: ").append(manufacturerId).append(", device ID: ").append(deviceId)
+				.append(", device version: ").append(version).append(", device type: ").append(deviceType)
+				.append(", as bytes: ");
 
-		HexConverter.appendShortHexStringFromByteArray(builder, bytes, 0, bytes.length);
+		HexConverter.appendShortHexString(builder, bytes, 0, bytes.length);
 		return builder.toString();
 	}
 

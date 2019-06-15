@@ -21,5 +21,6 @@
 package org.openmuc.jmbus;
 
 public enum WMBusMode {
-	T, S
+	T,
+	S
 }

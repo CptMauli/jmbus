@@ -20,7 +20,7 @@ APP_HOME="`pwd -P`"
 cd "$SAVED" >&-
 
 
-CLASSPATH=$(JARS=("$APP_HOME"/build/libsdeps/*.jar); IFS=:; echo "${JARS[*]}")
+CLASSPATH=$(JARS=("$APP_HOME"/build/libs-all/*.jar); IFS=:; echo "${JARS[*]}")
 
 SYSPROPS=""
 for i in $@; do 
@@ -31,4 +31,4 @@ for i in $@; do
     fi
 done
 
-java $SYSPROPS -Djava.library.path=/usr/lib/jni -cp $CLASSPATH org.openmuc.jmbus.app.ScanForMeters $PARAMS
+java $SYSPROPS -cp $CLASSPATH org.openmuc.jmbus.app.ScanForMeters $PARAMS

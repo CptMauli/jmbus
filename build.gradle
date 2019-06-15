@@ -1,151 +1,266 @@
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'osgi'
-apply plugin: 'maven'
-apply plugin: 'signing'
+plugins {
+  id "org.sonarqube" version "1.0"
+}
 
-version = '2.1.0'
-group = 'org.openmuc'
-def projectName = 'jMBus'
-def projectNameLowerCase = 'jmbus'
+apply from: "configuration.gradle"
 
-sourceCompatibility = 1.6
-targetCompatibility = 1.6
+configure(allprojects) {
+  version = cfgVersion
+}
 
-repositories { mavenCentral() }
+configure(javaProjects) {
 
-sourceSets {
-  sample
-  itest {
-    compileClasspath += sourceSets.main.runtimeClasspath
+  apply plugin: 'java'
+  apply plugin: 'eclipse'
+  apply plugin: 'osgi'
+  apply plugin: 'maven'
+  apply plugin: 'signing'
+
+  group = cfgGroup
+
+  sourceCompatibility = 1.7
+  targetCompatibility = 1.7
+
+  repositories { mavenCentral() }
+
+  sourceSets {
+    sample
+    itest {
+      compileClasspath += sourceSets.main.runtimeClasspath
+    }
   }
+
+  dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    itestCompile group: 'junit', name: 'junit', version: '4.12'
+  }
+
+  //---------------------------------For Jenkins-----------------------------
+  apply plugin: 'jacoco'
+  
+  jacoco {
+    toolVersion = "0.7.1.201405082137"
+    reportsDir = file("/var/www/jenkins/${rootProject.name}/CodeCoverage")
+  }
+
+  jacocoTestReport {
+    reports {
+      xml.enabled false
+      csv.enabled true
+      csv.destination "/var/www/jenkins/${rootProject.name}/CodeCoverage/${project.name}/result.csv"
+      html.destination "/var/www/jenkins/${rootProject.name}/CodeCoverage/${project.name}/"
+    }
+  }
+
+  task jenkinsTest(type: Test){
+    reports.junitXml.destination = "/var/www/jenkins/${rootProject.name}/TestReport/${project.name}" 
+    reports.html.destination = "/var/www/jenkins/${rootProject.name}/TestReport/${project.name}"
+    dependsOn test
+  }
+
+  //------------------------------------------------------------------------------
+
+  jar {
+    manifest {
+      version = project.version.replace('-','.');
+    }
+  }
+
+  task jarAll(type: Copy) {
+    dependsOn(configurations.default.getAllArtifacts().getBuildDependencies())
+
+    //only the jar file created:
+    from configurations.default.getAllArtifacts().getFiles()
+
+    ext.isDocProject = false;
+    docProjects.findAll {
+      if (it.getPath() == project.path) {
+        isDocProject = true;
+      }
+    }
+    
+    if (isDocProject) {
+      //configurations.archives also contains source and javadoc files
+      configurations.archives.getArtifacts().all {
+        if (it.file.name.endsWith("sources.jar") || it.file.name.endsWith("javadoc.jar")) {
+          from project.files(it.file)
+        }
+      }
+    }
+
+    if (cfgCopyDependencies) {
+      if (cfgCopyToRoot) {
+        into rootDir.getPath() + "/build/libs-all"
+      }
+      else {
+        into "build/libs-all"
+      }
+      //includes all the dependencies:
+      from configurations.default
+    }
+    else {
+      if (cfgCopyToRoot) {
+        into rootDir.getPath() + "/build/libs-all"
+      }
+      else {
+        into "build/libs-all"
+      }
+    }
+  }
+
+  build.dependsOn(jarAll)
+
+  eclipse.pathVariables([GRADLE_USER_HOME:file(gradle.gradleUserHomeDir)])
+  tasks.eclipse.dependsOn(cleanEclipse)
+
+
+  task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+  }
+
+  task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+  }
+
+  artifacts {
+    archives sourcesJar
+    archives javadocJar
+  }
+
+  javadoc {
+    exclude '**/internal/**'
+    exclude '**/java-gen/**'
+  }
+
 }
 
-dependencies {
-  testCompile group: 'junit', name: 'junit', version: '4.11'
-  itestCompile group: 'junit', name: 'junit', version: '4.11'
-  compile files('dependencies/rxtxcomm_api-2.2pre2-11_bundle.jar')
-}
 
-uploadArchives {
-  repositories {
-    mavenDeployer {
-      beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+configure(repositoryProjects) {
 
-      repository(url: project.properties.sonatypeRepository) {
-        authentication(userName: project.properties.sonatypeUser, password: project.properties.sonatypePass)
-      }
-      snapshotRepository(url: project.properties.sonatypeSnapshotRepository) {
-        authentication(userName: project.properties.sonatypeUser, password: project.properties.sonatypePass)
-      }
+  signing {
+    if ( project.hasProperty('signing.keyId') ) {
+      sign configurations.archives
+    }
+  }
 
-      pom.project {
-	name projectName
-	packaging 'jar'
-	description 'jMBus is a library that can be used to implement M-Bus masters or wireless M-Bus receivers that read meters.'
-	url 'http://www.openmuc.org/'
+  uploadArchives {
+    repositories {
+      mavenDeployer {
 
-	licenses {
-	  license {
-	    name 'GNU General Public License'
-	    url 'http://www.gnu.org/copyleft/gpl-3.0.html'
-	    distribution 'repo'
-	  }
-	}
+        if (cfgSignPom) {
+          beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+        }
 
-	scm {
-	  url 'none'
-	  connection 'none'
-	}
+        repository(url: cfgRepository) {
+          authentication(userName: cfgRepositoryUser, password: cfgRepositoryPass)
+          if (cfgRepository != null && System.getProperty('https.proxyHost') != null && ((System.getProperty('https.nonProxyHosts') == null) || !cfgRepository.contains(System.getProperty('https.nonProxyHosts')))) {
+            proxy(host: System.getProperty('https.proxyHost'), port:  Integer.parseInt(System.getProperty('https.proxyPort')), type: 'https')
+          }
+        }
+        snapshotRepository(url: cfgSnapshotRepository) {
+          authentication(userName: cfgRepositoryUser, password: cfgRepositoryPass)
+          if (cfgSnapshotRepository != null && System.getProperty('https.proxyHost') != null && ((System.getProperty('https.nonProxyHosts') == null) || !cfgSnapshotRepository.contains(System.getProperty('https.nonProxyHosts')))) {
+            proxy(host: System.getProperty('https.proxyHost'), port:  Integer.parseInt(System.getProperty('https.proxyPort')), type: 'https')
+          }
+        }
 
-	developers {
-	  developer {
-	    id 'sfeuerhahn'
-	    name 'Stefan Feuerhahn'
-	  }
-	}
+        pom.project {
+          
+          //additional pom information can be found in subproject build.gradle files
+
+          packaging 'jar'
+          url 'http://www.openmuc.org/'
+
+          scm {
+            url 'none'
+            connection 'none'
+          }
+
+          developers {
+            developer {
+              id 'sfeuerhahn'
+              name 'Stefan Feuerhahn'
+            }
+          }
+        }
       }
     }
   }
 }
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-  classifier = 'sources'
-  from sourceSets.main.allSource
+configure(docProjects) {
+  jarAll.dependsOn sourcesJar
+  jarAll.dependsOn javadocJar
 }
 
-task javadocJar(type: Jar, dependsOn: javadoc) {
-  classifier = 'javadoc'
-  from javadoc.destinationDir
-}
+task javadocAll(type: Javadoc) {
 
-artifacts {
-  archives sourcesJar
-  archives javadocJar
-}
-
-signing {
-  if ( project.hasProperty('signing.keyId') ) {
-    sign configurations.archives
+  source docProjects.collect {
+    project -> project.sourceSets.main.allJava
   }
-}
 
-task copyLibs(type: Copy) {
-  dependsOn(configurations.default.getAllArtifacts().getBuildDependencies())
-  dependsOn(sourcesJar)  
-
-  into "build/libsdeps"
-  from configurations.default
-  from configurations.archives.getAllArtifacts().getFiles()
-}
-
-build.dependsOn(copyLibs)
-
-jar {
-  manifest {
-    version = project.version.replace('-','.');
-    name = projectName
-    instruction 'Export-Package', '!*.internal.*,*'
-  }
-}
-
-task itest(type: Test) {
-    testClassesDir = sourceSets.itest.output.classesDir
-    classpath += sourceSets.itest.runtimeClasspath
-}
-
-eclipse.pathVariables([GRADLE_USER_HOME:file(gradle.gradleUserHomeDir)])
-tasks.eclipse.dependsOn(cleanEclipse)
-
-task javadocs(type: Javadoc) {
-  source sourceSets.main.allJava
-  
   exclude '**/internal/**'
-  
-  destinationDir = new File(buildDir, 'javadoc')
-  
-  classpath = sourceSets.main.compileClasspath
-  classpath += sourceSets.main.output
+
+  destinationDir = new File(buildDir, 'docs/javadoc-all')
+
+  classpath = files(distributionProjects.collect { project ->
+    project.sourceSets.main.compileClasspath })
+
+  classpath += files(distributionProjects.collect { project ->
+    project.sourceSets.main.output })
 }
 
-task (tar, type: Tar) {
-  dependsOn(build)
-  dependsOn(javadocs)
+
+task writeSettings << {
+  Writer out = new OutputStreamWriter(new FileOutputStream("build/settings.gradle"));
+  out.write("include ");
+  boolean first = true;
+  for (Project myproject: distributionProjects) {
+    if (!myproject.getProjectDir().equals(getProjectDir())) {
+      if (first == true) {
+        first = false;
+      }
+      else {
+        out.write ", ";
+      }
+      out.write "'" + myproject.name + "'"
+    }
+  }
+  out .write "\n\n";
+
+  for (Project myproject: distributionProjects) {
+    if (!myproject.getProjectDir().equals(getProjectDir())) {
+      println myproject.name
+      out.write 'project(":' + myproject.name + '").projectDir = file("' + myproject.getProjectDir().toString().substring((int)(getProjectDir().toString().size() + 1)) + '")\n';
+    }
+  }
+
+  out.close();
+}
+
+task buildDistProjects {
+  dependsOn(distributionProjects.build)
+}
+
+tasks.withType(Tar) {
+
+  dependsOn(writeSettings)
+  dependsOn(distributionProjects.build)
+  dependsOn(javadocAll)
 
   compression = Compression.GZIP
-
-  into(project.archivesBaseName) {
-    from('./') {
-      include 'build.gradle'
-      include 'licenses/**'
-      include 'doc/*.txt'
-      include 'doc/userguide/' + projectNameLowerCase + '-doc*.html'
-      include 'doc/userguide/' + projectNameLowerCase + '-doc_img/**'
-      include 'build/libsdeps/**'
-      include 'build/javadoc/**'
-      include 'dependencies/**'
-      include 'src/**'
-      include 'run-scripts/**'
-    }
-  }
+  
+  destinationDir = file('build/distributions/')
 }
+
+task (tarFull, type: Tar) {
+  archiveName = project.name + "-" + project.version + "_full.tgz"
+}
+
+
+task (tar, type: Tar) {
+  archiveName = project.name + "-" + project.version + ".tgz"
+}
+

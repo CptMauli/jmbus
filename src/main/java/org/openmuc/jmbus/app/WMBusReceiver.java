@@ -26,8 +26,8 @@ import java.util.Date;
 import org.openmuc.jmbus.DecodingException;
 import org.openmuc.jmbus.HexConverter;
 import org.openmuc.jmbus.SecondaryAddress;
-import org.openmuc.jmbus.WMBusDataMessage;
 import org.openmuc.jmbus.WMBusListener;
+import org.openmuc.jmbus.WMBusMessage;
 import org.openmuc.jmbus.WMBusMode;
 import org.openmuc.jmbus.WMBusSap;
 import org.openmuc.jmbus.WMBusSapAmber;
@@ -43,19 +43,19 @@ public class WMBusReceiver implements WMBusListener {
 	private static boolean debugMode = false;
 
 	private static void printUsage() {
-		System.out
-				.println("SYNOPSIS\n\torg.openmuc.jmbus.app.WMBusReceiver <serial_port> <transceiver> <mode> [--debug] [<secondary_address>:<key>...]");
-		System.out
-				.println("DESCRIPTION\n\tListens using a wireless M-Bus transceiver on the given serial port for wireless M-bus messages and prints them to stdout. Errors are printed to stderr.");
+		System.out.println(
+				"SYNOPSIS\n\torg.openmuc.jmbus.app.WMBusReceiver <serial_port> <transceiver> <mode> [--debug] [<secondary_address>:<key>...]");
+		System.out.println(
+				"DESCRIPTION\n\tListens using a wireless M-Bus transceiver on the given serial port for wireless M-bus messages and prints them to stdout. Errors are printed to stderr.");
 		System.out.println("OPTIONS");
-		System.out
-				.println("\t<serial_port>\n\t    The serial port used for communication. Examples are /dev/ttyS0 (Linux) or COM1 (Windows)\n");
-		System.out
-				.println("\t<transceiver>\n\t    The transceiver use. It can be 'amber' or 'rc' for modules from RadioCrafts\n");
+		System.out.println(
+				"\t<serial_port>\n\t    The serial port used for communication. Examples are /dev/ttyS0 (Linux) or COM1 (Windows)\n");
+		System.out.println(
+				"\t<transceiver>\n\t    The transceiver being used. It can be 'amber' or 'rc' for modules from RadioCrafts\n");
 		System.out.println("\t<mode>\n\t    The wM-Bus mode can be S or T\n");
 		System.out.println("\t--debug\n\t    Print more verbose error information\n");
-		System.out
-				.println("\t<secondary_address>:<key>...\n\t    Address/key pairs that shall be used to decode the incoming messages. The secondary address is consists of 8 bytes that should be specified in hexadecimal form.\n");
+		System.out.println(
+				"\t<secondary_address>:<key>...\n\t    Address/key pairs that shall be used to decode the incoming messages. The secondary address consists of 8 bytes that should be specified in hexadecimal form.\n");
 
 	}
 
@@ -109,8 +109,8 @@ public class WMBusReceiver implements WMBusListener {
 			}
 			wMBusSap.setKey(
 					SecondaryAddress.getFromWMBusLinkLayerHeader(
-							HexConverter.getByteArrayFromShortHexString(args[i].substring(0, index)), 0),
-					HexConverter.getByteArrayFromShortHexString(args[i].substring(index + 1)));
+							HexConverter.fromShortHexString(args[i].substring(0, index)), 0),
+					HexConverter.fromShortHexString(args[i].substring(index + 1)));
 		}
 
 		try {
@@ -132,7 +132,7 @@ public class WMBusReceiver implements WMBusListener {
 	}
 
 	@Override
-	public void newMessage(WMBusDataMessage message) {
+	public void newMessage(WMBusMessage message) {
 		System.out.println("Message received at: " + new Date());
 
 		try {
@@ -140,6 +140,7 @@ public class WMBusReceiver implements WMBusListener {
 		} catch (DecodingException e) {
 			System.out.println("Unable to fully decode received message: " + e.getMessage());
 			if (debugMode == true) {
+				System.out.println("Complete Message: " + HexConverter.toShortHexString(message.asBytes()));
 				e.printStackTrace();
 			}
 		}
@@ -150,7 +151,7 @@ public class WMBusReceiver implements WMBusListener {
 
 	@Override
 	public void discardedBytes(byte[] bytes) {
-		System.out.println("Bytes discarded: " + HexConverter.getShortHexStringFromByteArray(bytes));
+		System.out.println("Bytes discarded: " + HexConverter.toShortHexString(bytes));
 		System.out.println();
 	}
 
