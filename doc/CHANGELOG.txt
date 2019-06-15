@@ -1,3 +1,15 @@
+v2.2.1 26-Feb-2016
+------------------
+- increased default timeout from 300ms to 500ms because it was too
+  short for many meters
+- made timeout configurable in all console applications
+- inserted sleep between SND_NKE and REQ_UD2 requests in ReadMeter and
+  ScanMeter console apps because some meters would otherwise discard
+  the REQ_UD2 request
+- fixed decoding subunit, tariff and storage number from DIFEs
+- added support for decoding new data records defined in EN
+  13757-3-2013
+
 v2.2.0 18-Nov-2015
 ------------------
 - added support for writing to meters

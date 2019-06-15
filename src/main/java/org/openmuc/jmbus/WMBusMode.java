@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-15 Fraunhofer ISE
+ * Copyright 2010-16 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -21,6 +21,6 @@
 package org.openmuc.jmbus;
 
 public enum WMBusMode {
-	T,
-	S
+    T,
+    S
 }

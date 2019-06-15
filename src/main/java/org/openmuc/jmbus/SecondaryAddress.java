@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-15 Fraunhofer ISE
+ * Copyright 2010-16 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -25,141 +25,151 @@ import java.util.Arrays;
 
 public class SecondaryAddress {
 
-	private String manufacturerId;
-	private Bcd deviceId;
-	private final int version;
-	private final DeviceType deviceType;
-	private final byte[] bytes = new byte[8];
-	private final int hashCode;
+    private String manufacturerId;
+    private Bcd deviceId;
+    private final int version;
+    private final DeviceType deviceType;
+    private final byte[] bytes = new byte[8];
+    private final int hashCode;
 
-	private SecondaryAddress(byte[] buffer, int offset, boolean longHeader) {
-		System.arraycopy(buffer, offset, bytes, 0, bytes.length);
-		hashCode = Arrays.hashCode(Arrays.copyOfRange(buffer, offset, bytes.length + offset - 1));
+    private SecondaryAddress(byte[] buffer, int offset, boolean longHeader) {
+        System.arraycopy(buffer, offset, bytes, 0, bytes.length);
+        hashCode = Arrays.hashCode(Arrays.copyOfRange(buffer, offset, bytes.length + offset - 1));
 
-		int i = offset;
+        int i = offset;
 
-		if (longHeader) {
-			i = decodeDeviceId(buffer, i);
-			i = decodeManufacturerId(buffer, i);
-		}
-		else {
-			i = decodeManufacturerId(buffer, i);
-			i = decodeDeviceId(buffer, i);
-		}
-		version = buffer[i++] & 0xff;
-		deviceType = DeviceType.newDevice(buffer[i++] & 0xff);
-	}
+        if (longHeader) {
+            i = decodeDeviceId(buffer, i);
+            i = decodeManufacturerId(buffer, i);
+        }
+        else {
+            i = decodeManufacturerId(buffer, i);
+            i = decodeDeviceId(buffer, i);
+        }
+        version = buffer[i++] & 0xff;
+        deviceType = DeviceType.getInstance(buffer[i++] & 0xff);
+    }
 
-	private int decodeManufacturerId(byte[] buffer, int i) {
-		int manufacturerIdAsInt = (buffer[i++] & 0xff) + (buffer[i++] << 8);
-		char c = (char) ((manufacturerIdAsInt & 0x1f) + 64);
-		manufacturerIdAsInt = (manufacturerIdAsInt >> 5);
-		char c1 = (char) ((manufacturerIdAsInt & 0x1f) + 64);
-		manufacturerIdAsInt = (manufacturerIdAsInt >> 5);
-		char c2 = (char) ((manufacturerIdAsInt & 0x1f) + 64);
-		manufacturerId = "" + c2 + c1 + c;
-		return i;
-	}
+    private int decodeManufacturerId(byte[] buffer, int i) {
+        int manufacturerIdAsInt = (buffer[i++] & 0xff) + (buffer[i++] << 8);
+        char c = (char) ((manufacturerIdAsInt & 0x1f) + 64);
+        manufacturerIdAsInt = (manufacturerIdAsInt >> 5);
+        char c1 = (char) ((manufacturerIdAsInt & 0x1f) + 64);
+        manufacturerIdAsInt = (manufacturerIdAsInt >> 5);
+        char c2 = (char) ((manufacturerIdAsInt & 0x1f) + 64);
+        manufacturerId = "" + c2 + c1 + c;
+        return i;
+    }
 
-	private static byte[] encodeManufacturerId(String manufactureId) {
+    private static byte[] encodeManufacturerId(String manufactureId) {
 
-		byte[] mfId = new byte[] { 0, 0 };
+        byte[] mfId = new byte[] { 0, 0 };
 
-		if (manufactureId.length() == 3) {
+        if (manufactureId.length() == 3) {
 
-			manufactureId = manufactureId.toUpperCase();
+            manufactureId = manufactureId.toUpperCase();
 
-			char[] manufactureIdArray = manufactureId.toCharArray();
-			int manufacturerIdAsInt = (manufactureIdArray[0] - 64) * 32 * 32;
-			manufacturerIdAsInt += (manufactureIdArray[1] - 64) * 32;
-			manufacturerIdAsInt += (manufactureIdArray[1] - 64);
+            char[] manufactureIdArray = manufactureId.toCharArray();
+            int manufacturerIdAsInt = (manufactureIdArray[0] - 64) * 32 * 32;
+            manufacturerIdAsInt += (manufactureIdArray[1] - 64) * 32;
+            manufacturerIdAsInt += (manufactureIdArray[1] - 64);
 
-			mfId = ByteBuffer.allocate(4).putInt(manufacturerIdAsInt).array();
-		}
+            mfId = ByteBuffer.allocate(4).putInt(manufacturerIdAsInt).array();
+        }
 
-		return mfId;
-	}
+        return mfId;
+    }
 
-	private int decodeDeviceId(byte[] buffer, int i) {
-		byte[] idArray = new byte[4];
-		idArray[0] = buffer[i++];
-		idArray[1] = buffer[i++];
-		idArray[2] = buffer[i++];
-		idArray[3] = buffer[i++];
-		deviceId = new Bcd(idArray);
-		return i;
-	}
+    private int decodeDeviceId(byte[] buffer, int i) {
+        byte[] idArray = new byte[4];
+        idArray[0] = buffer[i++];
+        idArray[1] = buffer[i++];
+        idArray[2] = buffer[i++];
+        idArray[3] = buffer[i++];
+        deviceId = new Bcd(idArray);
+        return i;
+    }
 
-	public static SecondaryAddress getFromLongHeader(byte[] buffer, int offset) {
-		return new SecondaryAddress(buffer, offset, true);
-	}
+    public static SecondaryAddress getFromLongHeader(byte[] buffer, int offset) {
+        return new SecondaryAddress(buffer, offset, true);
+    }
 
-	public static SecondaryAddress getFromWMBusLinkLayerHeader(byte[] buffer, int offset) {
-		return new SecondaryAddress(buffer, offset, false);
-	}
+    public static SecondaryAddress getFromWMBusLinkLayerHeader(byte[] buffer, int offset) {
+        return new SecondaryAddress(buffer, offset, false);
+    }
 
-	public static SecondaryAddress getFromHexString(String hexString) throws NumberFormatException {
-		byte[] buffer = HexConverter.fromShortHexString(hexString);
-		return new SecondaryAddress(buffer, 0, true);
-	}
+    public static SecondaryAddress getFromHexString(String hexString) throws NumberFormatException {
+        byte[] buffer = HexConverter.fromShortHexString(hexString);
+        return new SecondaryAddress(buffer, 0, true);
+    }
 
-	public static SecondaryAddress getFromManufactureId(byte[] idNumber, String manufactureId, byte version, byte media)
-			throws NumberFormatException {
+    public static SecondaryAddress getFromManufactureId(byte[] idNumber, String manufactureId, byte version, byte media)
+            throws NumberFormatException {
 
-		if (idNumber.length == 8) {
-			byte[] mfId = encodeManufacturerId(manufactureId);
-			byte[] buffer = ByteBuffer.allocate(idNumber.length + mfId.length + 1 + 1).put(idNumber).put(mfId)
-					.put(version).put(media).array();
-			return new SecondaryAddress(buffer, 0, true);
-		}
-		else {
-			throw new NumberFormatException("Wrong length of idNumber. Allowed length is 8.");
-		}
-	}
+        if (idNumber.length == 8) {
+            byte[] mfId = encodeManufacturerId(manufactureId);
+            byte[] buffer = ByteBuffer.allocate(idNumber.length + mfId.length + 1 + 1)
+                    .put(idNumber)
+                    .put(mfId)
+                    .put(version)
+                    .put(media)
+                    .array();
+            return new SecondaryAddress(buffer, 0, true);
+        }
+        else {
+            throw new NumberFormatException("Wrong length of idNumber. Allowed length is 8.");
+        }
+    }
 
-	public byte[] asByteArray() {
-		return bytes;
-	}
+    public byte[] asByteArray() {
+        return bytes;
+    }
 
-	public int getHashCode() {
-		return hashCode;
-	}
+    public int getHashCode() {
+        return hashCode;
+    }
 
-	public String getManufacturerId() {
-		return manufacturerId;
-	}
+    public String getManufacturerId() {
+        return manufacturerId;
+    }
 
-	/**
-	 * Returns the device ID. This is secondary address of the device.
-	 * 
-	 * @return the device ID
-	 */
-	public Bcd getDeviceId() {
-		return deviceId;
-	}
+    /**
+     * Returns the device ID. This is secondary address of the device.
+     * 
+     * @return the device ID
+     */
+    public Bcd getDeviceId() {
+        return deviceId;
+    }
 
-	/**
-	 * Returns the device type (e.g. gas, water etc.)
-	 * 
-	 * @return the device type
-	 */
-	public DeviceType getDeviceType() {
-		return deviceType;
-	}
+    /**
+     * Returns the device type (e.g. gas, water etc.)
+     * 
+     * @return the device type
+     */
+    public DeviceType getDeviceType() {
+        return deviceType;
+    }
 
-	public int getVersion() {
-		return version;
-	}
+    public int getVersion() {
+        return version;
+    }
 
-	@Override
-	public String toString() {
-		StringBuilder builder = new StringBuilder();
-		builder.append("manufacturer ID: ").append(manufacturerId).append(", device ID: ").append(deviceId)
-				.append(", device version: ").append(version).append(", device type: ").append(deviceType)
-				.append(", as bytes: ");
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("manufacturer ID: ")
+                .append(manufacturerId)
+                .append(", device ID: ")
+                .append(deviceId)
+                .append(", device version: ")
+                .append(version)
+                .append(", device type: ")
+                .append(deviceType)
+                .append(", as bytes: ");
 
-		HexConverter.appendShortHexString(builder, bytes, 0, bytes.length);
-		return builder.toString();
-	}
+        HexConverter.appendShortHexString(builder, bytes, 0, bytes.length);
+        return builder.toString();
+    }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-15 Fraunhofer ISE
+ * Copyright 2010-16 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -26,43 +26,43 @@ import java.util.HashMap;
 
 abstract class AbstractWMBusSap implements WMBusSap {
 
-	final static int BUFFER_LENGTH = 1000;
-	final byte[] outputBuffer = new byte[BUFFER_LENGTH];
-	final byte[] inputBuffer = new byte[BUFFER_LENGTH];
+    final static int BUFFER_LENGTH = 1000;
+    final byte[] outputBuffer = new byte[BUFFER_LENGTH];
+    final byte[] inputBuffer = new byte[BUFFER_LENGTH];
 
-	final WMBusListener listener;
-	final WMBusMode mode;
+    final WMBusListener listener;
+    final WMBusMode mode;
 
-	SerialTransceiver serialTransceiver;
+    SerialTransceiver serialTransceiver;
 
-	final HashMap<String, byte[]> keyMap = new HashMap<String, byte[]>();
-	volatile boolean closed = true;
+    final HashMap<String, byte[]> keyMap = new HashMap<String, byte[]>();
+    volatile boolean closed = true;
 
-	DataOutputStream os;
-	DataInputStream is;
+    DataOutputStream os;
+    DataInputStream is;
 
-	AbstractWMBusSap(WMBusMode mode, WMBusListener listener) {
-		this.listener = listener;
-		this.mode = mode;
-	}
+    AbstractWMBusSap(WMBusMode mode, WMBusListener listener) {
+        this.listener = listener;
+        this.mode = mode;
+    }
 
-	@Override
-	public void close() {
-		if (closed) {
-			return;
-		}
-		closed = true;
-		serialTransceiver.close();
-	}
+    @Override
+    public void close() {
+        if (closed) {
+            return;
+        }
+        closed = true;
+        serialTransceiver.close();
+    }
 
-	@Override
-	public void setKey(SecondaryAddress address, byte[] key) {
-		keyMap.put(HexConverter.toShortHexString(address.asByteArray()), key);
-	}
+    @Override
+    public void setKey(SecondaryAddress address, byte[] key) {
+        keyMap.put(HexConverter.toShortHexString(address.asByteArray()), key);
+    }
 
-	@Override
-	public void removeKey(SecondaryAddress address) {
-		keyMap.remove(HexConverter.toShortHexString(address.asByteArray()));
-	}
+    @Override
+    public void removeKey(SecondaryAddress address) {
+        keyMap.remove(HexConverter.toShortHexString(address.asByteArray()));
+    }
 
 }

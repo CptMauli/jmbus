@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-15 Fraunhofer ISE
+ * Copyright 2010-16 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -51,88 +51,90 @@ import java.util.HashMap;
  */
 public class WMBusMessage {
 
-	private final byte[] buffer;
-	private final Integer signalStrengthInDBm;
-	HashMap<String, byte[]> keyMap;
+    private final byte[] buffer;
+    private final Integer signalStrengthInDBm;
+    HashMap<String, byte[]> keyMap;
 
-	private int length;
-	private int controlField;
-	private SecondaryAddress secondaryAddress;
-	private VariableDataStructure vdr;
+    private int length;
+    private int controlField;
+    private SecondaryAddress secondaryAddress;
+    private VariableDataStructure vdr;
 
-	private boolean decoded = false;
+    private boolean decoded = false;
 
-	WMBusMessage(byte[] buffer, Integer signalStrengthInDBm, HashMap<String, byte[]> keyMap) {
-		this.buffer = buffer;
-		this.signalStrengthInDBm = signalStrengthInDBm;
-		this.keyMap = keyMap;
-	}
+    WMBusMessage(byte[] buffer, Integer signalStrengthInDBm, HashMap<String, byte[]> keyMap) {
+        this.buffer = buffer;
+        this.signalStrengthInDBm = signalStrengthInDBm;
+        this.keyMap = keyMap;
+    }
 
-	public void decode() throws DecodingException {
-		length = buffer[0] & 0xff;
-		if (length > (buffer.length - 1)) {
-			throw new DecodingException("byte buffer has only a length of " + buffer.length
-					+ " while the specified length field is " + length);
-		}
-		controlField = buffer[1] & 0xff;
-		secondaryAddress = SecondaryAddress.getFromWMBusLinkLayerHeader(buffer, 2);
-		vdr = new VariableDataStructure(buffer, 10, length - 9, secondaryAddress, keyMap);
+    public void decode() throws DecodingException {
+        length = buffer[0] & 0xff;
+        if (length > (buffer.length - 1)) {
+            throw new DecodingException("byte buffer has only a length of " + buffer.length
+                    + " while the specified length field is " + length);
+        }
+        controlField = buffer[1] & 0xff;
+        secondaryAddress = SecondaryAddress.getFromWMBusLinkLayerHeader(buffer, 2);
+        vdr = new VariableDataStructure(buffer, 10, length - 9, secondaryAddress, keyMap);
 
-		decoded = true;
-	}
+        decoded = true;
+    }
 
-	public void decodeDeep() throws DecodingException {
-		decode();
-		vdr.decode();
-	}
+    public void decodeDeep() throws DecodingException {
+        decode();
+        vdr.decode();
+    }
 
-	public boolean isDecoded() {
-		return decoded;
-	}
+    public boolean isDecoded() {
+        return decoded;
+    }
 
-	public byte[] asBytes() {
-		return buffer;
-	}
+    public byte[] asBytes() {
+        return buffer;
+    }
 
-	public int getControlField() {
-		return controlField;
-	}
+    public int getControlField() {
+        return controlField;
+    }
 
-	public SecondaryAddress getSecondaryAddress() {
-		return secondaryAddress;
-	}
+    public SecondaryAddress getSecondaryAddress() {
+        return secondaryAddress;
+    }
 
-	public VariableDataStructure getVariableDataResponse() {
-		return vdr;
-	}
+    public VariableDataStructure getVariableDataResponse() {
+        return vdr;
+    }
 
-	/**
-	 * Returns the received signal string indication (RSSI) in dBm.
-	 * 
-	 * @return the RSSI
-	 */
-	public Integer getRssi() {
-		return signalStrengthInDBm;
-	}
+    /**
+     * Returns the received signal string indication (RSSI) in dBm.
+     * 
+     * @return the RSSI
+     */
+    public Integer getRssi() {
+        return signalStrengthInDBm;
+    }
 
-	@Override
-	public String toString() {
-		StringBuilder builder = new StringBuilder();
-		if (signalStrengthInDBm != null) {
-			builder.append("Message was received with signal strength: ").append(signalStrengthInDBm).append("dBm\n");
-		}
-		if (!decoded) {
-			builder.append("Message has not been decoded. Bytes of this message:\n");
-			HexConverter.appendHexString(builder, buffer, 0, buffer.length);
-			return builder.toString();
-		}
-		else {
-			builder.append("control field: ");
-			HexConverter.appendHexString(controlField, builder);
-			builder.append("\nSecondary Address -> ").append(secondaryAddress).append("\nVariable Data Response:\n")
-					.append(vdr);
-			return builder.toString();
-		}
-	}
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        if (signalStrengthInDBm != null) {
+            builder.append("Message was received with signal strength: ").append(signalStrengthInDBm).append("dBm\n");
+        }
+        if (!decoded) {
+            builder.append("Message has not been decoded. Bytes of this message:\n");
+            HexConverter.appendHexString(builder, buffer, 0, buffer.length);
+            return builder.toString();
+        }
+        else {
+            builder.append("control field: ");
+            HexConverter.appendHexString(controlField, builder);
+            builder.append("\nSecondary Address -> ")
+                    .append(secondaryAddress)
+                    .append("\nVariable Data Response:\n")
+                    .append(vdr);
+            return builder.toString();
+        }
+    }
 
 }

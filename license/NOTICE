@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-15 Fraunhofer ISE
+ * Copyright 2010-16 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -23,7 +23,7 @@ Dependencies
 ------------
 
 Information about the licenses of open source dependencies packaged
-with jDLMS can be found in the folder named "dependencies" inside the
+with jMBus can be found in the folder named "dependencies" inside the
 distribution.
 
 You may request the source code of the dependencies by sending a mail

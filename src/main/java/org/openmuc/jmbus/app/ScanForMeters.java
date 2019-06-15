@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-15 Fraunhofer ISE
+ * Copyright 2010-16 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -28,116 +28,132 @@ import org.openmuc.jmbus.ScanSecondaryAddress;
 
 public class ScanForMeters {
 
-	private final static int MIN_ARGS_LENGTH = 1;
-	private final static int MAX_ARGS_LENGTH = 5;
-	private final static int WILDCARD_MASK_LENGTH = 8;
+    private final static int MIN_ARGS_LENGTH = 1;
+    private final static int MAX_ARGS_LENGTH = 5;
+    private final static int WILDCARD_MASK_LENGTH = 8;
 
-	private static void printUsage() {
-		System.out.println(
-				"SYNOPSIS\n\torg.openmuc.jmbus.app.ScanForMeters <serial_port> [-b <baud_rate>] [-s [<wildcard_mask>]]");
-		System.out.println(
-				"DESCRIPTION\n\tScans the primary addresses 0 to 250 for connected meters by sending REQ_UD2 packets and waiting for a response.");
-		System.out.println("OPTIONS");
-		System.out.println(
-				"\t<serial_port>\n\t    The serial port used for communication. Examples are /dev/ttyS0 (Linux) or COM1 (Windows)\n");
-		System.out.println("\t<baud_rate>\n\t    The baud rate used to connect to the meter. Default is 2400.\n");
-		System.out.println("\t-s\n\t Scan for secondary addresses. Examples are -s or -s 15ffffff\n");
-	}
+    private static void printUsage() {
+        System.out.println(
+                "SYNOPSIS\n\torg.openmuc.jmbus.app.ScanForMeters <serial_port> [-b <baud_rate>] [-s [<wildcard_mask>]]");
+        System.out.println(
+                "DESCRIPTION\n\tScans the primary addresses 0 to 250 for connected meters by sending REQ_UD2 packets and waiting for a response.");
+        System.out.println("OPTIONS");
+        System.out.println(
+                "\t<serial_port>\n\t    The serial port used for communication. Examples are /dev/ttyS0 (Linux) or COM1 (Windows)\n");
+        System.out.println("\t-b <baud_rate>\n\t    The baud rate used to connect to the meter. Default is 2400.\n");
+        System.out.println("\t-t <timeout>\n\t    The scan timeout in milli seconds. Default is 1000 ms.\n");
+        System.out.println("\t-s\n\t Scan for secondary addresses. Examples are -s or -s 15ffffff\n");
+    }
 
-	public static void main(String[] args) {
+    public static void main(String[] args) {
 
-		int argsLength = args.length;
-		int baudRate = 2400;
-		int timeout = 1000;
-		String wildcardMask = "ffffffff";
+        int argsLength = args.length;
+        int baudRate = 2400;
+        int timeout = 1000;
+        String wildcardMask = "ffffffff";
 
-		boolean scanSecondaryAddress = false;
+        boolean scanSecondaryAddress = false;
 
-		if (argsLength < MIN_ARGS_LENGTH || argsLength > MAX_ARGS_LENGTH) {
-			printUsage();
-			System.exit(1);
-		}
+        if (argsLength < MIN_ARGS_LENGTH || argsLength > MAX_ARGS_LENGTH) {
+            printUsage();
+            System.exit(1);
+        }
 
-		String serialPortName = args[0];
+        String serialPortName = args[0];
 
-		for (int i = 1; i < args.length; ++i) {
+        for (int i = 1; i < args.length; ++i) {
 
-			if (args[i].equals("-b")) {
-				try {
-					baudRate = Integer.parseInt(args[++i]);
-				} catch (NumberFormatException e) {
-					error("Error, the <baud_rate> parameter is not an integer value.");
-				} catch (NullPointerException e) {
-					error("Error, no baudrate behind -b.");
-				}
-			}
+            if (args[i].equals("-b")) {
+                try {
+                    baudRate = Integer.parseInt(args[++i]);
+                } catch (NumberFormatException e) {
+                    error("Error, the <baud_rate> parameter is not an integer value.");
+                } catch (NullPointerException e) {
+                    error("Error, no baudrate behind -b.");
+                }
+            }
 
-			if (args[i].equals("-s")) {
-				scanSecondaryAddress = true;
-				if (i < argsLength - 1) {
-					if (args[++i].startsWith("-")) {
-						--i;
-					}
-					else {
-						wildcardMask = args[i];
-						if (wildcardMask.length() != WILDCARD_MASK_LENGTH) {
-							error("Error, allowed wilcard mask length is " + WILDCARD_MASK_LENGTH + " charactors.");
-						}
-					}
-				}
-			}
-		}
+            if (args[i].equals("-t")) {
+                try {
+                    timeout = Integer.parseInt(args[++i]);
+                } catch (NumberFormatException e) {
+                    error("Error, the <timeout> parameter is not an integer value.");
+                } catch (NullPointerException e) {
+                    error("Error, no timeout behind -t.");
+                }
+            }
 
-		MBusSap mBusSap = new MBusSap(serialPortName, baudRate);
-		try {
-			mBusSap.open();
-			mBusSap.setTimeout(timeout);
+            if (args[i].equals("-s")) {
+                scanSecondaryAddress = true;
+                if (i < argsLength - 1) {
+                    if (args[++i].startsWith("-")) {
+                        --i;
+                    }
+                    else {
+                        wildcardMask = args[i];
+                        if (wildcardMask.length() != WILDCARD_MASK_LENGTH) {
+                            error("Error, allowed wilcard mask length is " + WILDCARD_MASK_LENGTH + " charactors.");
+                        }
+                    }
+                }
+            }
+        }
 
-			System.out.println("Scanning address: ");
+        MBusSap mBusSap = new MBusSap(serialPortName, baudRate);
+        try {
+            mBusSap.open();
+            mBusSap.setTimeout(timeout);
 
-			if (scanSecondaryAddress) {
-				ScanSecondaryAddress.scan(mBusSap, wildcardMask);
-			}
-			else {
-				scanPrimaryAddresses(mBusSap);
-			}
+            System.out.println("Scanning address: ");
 
-		} catch (IOException e2) {
-			System.out.println("Failed to open serial port: " + e2.getMessage());
-			return;
-		} finally {
-			mBusSap.close();
-		}
-		System.out.println();
-		System.out.println("Scan finished.");
+            if (scanSecondaryAddress) {
+                ScanSecondaryAddress.scan(mBusSap, wildcardMask);
+            }
+            else {
+                scanPrimaryAddresses(mBusSap);
+            }
 
-	}
+        } catch (IOException e2) {
+            System.out.println("Failed to open serial port: " + e2.getMessage());
+            return;
+        } finally {
+            mBusSap.close();
+        }
+        System.out.println();
+        System.out.println("Scan finished.");
 
-	static void scanPrimaryAddresses(MBusSap mBusSap) {
+    }
 
-		for (int i = 0; i <= 250; i++) {
+    static void scanPrimaryAddresses(MBusSap mBusSap) {
 
-			System.out.print(i + ",");
-			try {
-				mBusSap.linkReset(i);
-				mBusSap.read(i);
-			} catch (TimeoutException e) {
-				continue;
-			} catch (IOException e) {
-				System.out.println();
-				System.out.println("Error reading meter at primary address " + i + ": " + e.getMessage());
-				System.out.print("Scanning address: ");
-				continue;
-			}
-			System.out.println();
-			System.out.println("Found device at primary address " + i + ".");
-			System.out.print("Scanning address: ");
-		}
-	}
+        for (int i = 0; i <= 250; i++) {
 
-	private static void error(String errMsg) {
-		System.err.println(errMsg);
-		System.exit(1);
-	}
+            System.out.print(i + ",");
+            try {
+                mBusSap.linkReset(i);
+                try {
+                    Thread.sleep(50); // for slow slaves
+                } catch (InterruptedException e) {
+                    error("Thread sleep fails.\n" + e.getMessage());
+                }
+                mBusSap.read(i);
+            } catch (TimeoutException e) {
+                continue;
+            } catch (IOException e) {
+                System.out.println();
+                System.out.println("Error reading meter at primary address " + i + ": " + e.getMessage());
+                System.out.print("Scanning address: ");
+                continue;
+            }
+            System.out.println();
+            System.out.println("Found device at primary address " + i + ".");
+            System.out.print("Scanning address: ");
+        }
+    }
+
+    private static void error(String errMsg) {
+        System.err.println(errMsg);
+        System.exit(1);
+    }
 
 }

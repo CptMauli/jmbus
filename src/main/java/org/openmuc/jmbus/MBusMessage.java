@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-15 Fraunhofer ISE
+ * Copyright 2010-16 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -37,81 +37,81 @@ package org.openmuc.jmbus;
  */
 class MBusMessage {
 
-	enum MessageType {
-		// the other message types (e.g. SND_NKE, REQ_UD2) cannot be sent from slave to master and are therefore
-		// omitted.
-		SINGLE_CHARACTER,
-		RSP_UD;
-	};
+    enum MessageType {
+        // the other message types (e.g. SND_NKE, REQ_UD2) cannot be sent from slave to master and are therefore
+        // omitted.
+        SINGLE_CHARACTER,
+        RSP_UD;
+    };
 
-	private final MessageType messageType;
-	private final int addressField;
-	private final VariableDataStructure variableDataStructure;
+    private final MessageType messageType;
+    private final int addressField;
+    private final VariableDataStructure variableDataStructure;
 
-	MBusMessage(byte[] buffer, int length) throws DecodingException {
+    MBusMessage(byte[] buffer, int length) throws DecodingException {
 
-		switch (buffer[0] & 0xff) {
-		case 0xe5:
-			messageType = MessageType.SINGLE_CHARACTER;
-			addressField = 0;
-			variableDataStructure = null;
-			break;
-		case 0x68:
-			int lengthField = buffer[1] & 0xff;
+        switch (buffer[0] & 0xff) {
+        case 0xe5:
+            messageType = MessageType.SINGLE_CHARACTER;
+            addressField = 0;
+            variableDataStructure = null;
+            break;
+        case 0x68:
+            int lengthField = buffer[1] & 0xff;
 
-			if (lengthField != length - 6) {
-				throw new DecodingException(
-						"Wrong length field in frame header does not match the buffer length. Length field: "
-								+ lengthField + ", buffer length: " + length + " !");
-			}
+            if (lengthField != length - 6) {
+                throw new DecodingException(
+                        "Wrong length field in frame header does not match the buffer length. Length field: "
+                                + lengthField + ", buffer length: " + length + " !");
+            }
 
-			if (buffer[1] != buffer[2]) {
-				throw new DecodingException("Length fields are not identical in long frame!");
-			}
+            if (buffer[1] != buffer[2]) {
+                throw new DecodingException("Length fields are not identical in long frame!");
+            }
 
-			if (buffer[3] != 0x68) {
-				throw new DecodingException("Fourth byte of long frame was not 0x68.");
-			}
+            if (buffer[3] != 0x68) {
+                throw new DecodingException("Fourth byte of long frame was not 0x68.");
+            }
 
-			int controlField = buffer[4] & 0xff;
+            int controlField = buffer[4] & 0xff;
 
-			if ((controlField & 0xcf) != 0x08) {
-				throw new DecodingException(
-						"Unexptected control field value: " + HexConverter.toHexString((byte) controlField));
-			}
+            if ((controlField & 0xcf) != 0x08) {
+                throw new DecodingException(
+                        "Unexptected control field value: " + HexConverter.toHexString((byte) controlField));
+            }
 
-			messageType = MessageType.RSP_UD;
+            messageType = MessageType.RSP_UD;
 
-			addressField = buffer[5] & 0xff;
+            addressField = buffer[5] & 0xff;
 
-			variableDataStructure = new VariableDataStructure(buffer, 6, length - 6, null, null);
-			break;
-		default:
-			throw new DecodingException("Unexpected first frame byte: " + HexConverter.toHexString(buffer[0]));
-		}
-	}
+            variableDataStructure = new VariableDataStructure(buffer, 6, length - 6, null, null);
+            break;
+        default:
+            throw new DecodingException("Unexpected first frame byte: " + HexConverter.toHexString(buffer[0]));
+        }
+    }
 
-	public int getAddressField() {
-		return addressField;
-	}
+    public int getAddressField() {
+        return addressField;
+    }
 
-	public MessageType getMessageType() {
-		return messageType;
-	}
+    public MessageType getMessageType() {
+        return messageType;
+    }
 
-	public VariableDataStructure getVariableDataResponse() {
-		return variableDataStructure;
-	}
+    public VariableDataStructure getVariableDataResponse() {
+        return variableDataStructure;
+    }
 
-	@Override
-	public String toString() {
-		StringBuilder builder = new StringBuilder();
-		builder.append("message type: ");
-		builder.append(messageType);
-		builder.append("\naddress field: ");
-		builder.append(addressField & 0xff);
-		builder.append("\nVariable Data Response:\n").append(variableDataStructure);
-		return builder.toString();
-	}
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("message type: ");
+        builder.append(messageType);
+        builder.append("\naddress field: ");
+        builder.append(addressField & 0xff);
+        builder.append("\nVariable Data Structure:\n").append(variableDataStructure);
+        return builder.toString();
+    }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-15 Fraunhofer ISE
+ * Copyright 2010-16 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -20,75 +20,66 @@
  */
 package org.openmuc.jmbus;
 
-/**
- * 
- * @author Stefan Feuerhahn
- * 
- */
+import java.util.HashMap;
+import java.util.Map;
+
 public enum EncryptionMode {
-	NONE(0),
-	RESERVED_01(1),
-	DES_CBC(2),
-	DES_CBC_IV(3),
-	RESERVED_04(4),
-	AES_CBC_IV(5),
-	RESERVED_06(6),
-	RESERVED_07(7),
-	RESERVED_08(8),
-	RESERVED_09(9),
-	RESERVED_10(10),
-	RESERVED_11(11),
-	RESERVED_12(12),
-	RESERVED_13(13),
-	RESERVED_14(14),
-	RESERVED_15(15);
-	private final int code;
+    NONE(0),
+    RESERVED_01(1),
+    DES_CBC(2),
+    DES_CBC_IV(3),
+    RESERVED_04(4),
+    AES_CBC_IV(5),
+    RESERVED_06(6),
+    RESERVED_07(7),
+    RESERVED_08(8),
+    RESERVED_09(9),
+    RESERVED_10(10),
+    RESERVED_11(11),
+    RESERVED_12(12),
+    RESERVED_13(13),
+    RESERVED_14(14),
+    RESERVED_15(15);
 
-	EncryptionMode(int code) {
-		this.code = code;
-	}
+    private final int id;
 
-	public int getCode() {
-		return code;
-	}
+    private static final Map<Integer, EncryptionMode> idMap = new HashMap<Integer, EncryptionMode>();
 
-	public static EncryptionMode newEncryptionMode(int code) {
-		switch (code) {
-		case 0:
-			return EncryptionMode.NONE;
-		case 1:
-			return EncryptionMode.RESERVED_01;
-		case 2:
-			return EncryptionMode.DES_CBC;
-		case 3:
-			return EncryptionMode.DES_CBC_IV;
-		case 4:
-			return EncryptionMode.RESERVED_04;
-		case 5:
-			return EncryptionMode.AES_CBC_IV;
-		case 6:
-			return EncryptionMode.RESERVED_06;
-		case 7:
-			return EncryptionMode.RESERVED_07;
-		case 8:
-			return EncryptionMode.RESERVED_08;
-		case 9:
-			return EncryptionMode.RESERVED_09;
-		case 10:
-			return EncryptionMode.RESERVED_10;
-		case 11:
-			return EncryptionMode.RESERVED_11;
-		case 12:
-			return EncryptionMode.RESERVED_12;
-		case 13:
-			return EncryptionMode.RESERVED_13;
-		case 14:
-			return EncryptionMode.RESERVED_14;
-		case 15:
-			return EncryptionMode.RESERVED_15;
-		default:
-			throw new IllegalArgumentException("invalid encryption mode code: " + code);
-		}
-	}
+    static {
+        for (EncryptionMode enumInstance : EncryptionMode.values()) {
+            if (idMap.put(enumInstance.getId(), enumInstance) != null) {
+                throw new IllegalArgumentException("duplicate ID: " + enumInstance.getId());
+            }
+        }
+    }
+
+    private EncryptionMode(int id) {
+        this.id = id;
+    }
+
+    /**
+     * Returns the ID of this EncryptionMode.
+     * 
+     * @return the ID
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * Returns the EncryptionMode that corresponds to the given ID. Throws an IllegalArgumentException if no
+     * EncryptionMode with the given ID exists.
+     * 
+     * @param id
+     *            the ID
+     * @return the EncryptionMode that corresponds to the given ID
+     */
+    public static EncryptionMode getInstance(int id) {
+        EncryptionMode enumInstance = idMap.get(id);
+        if (enumInstance == null) {
+            throw new IllegalArgumentException("invalid ID: " + id);
+        }
+        return enumInstance;
+    }
 
 }

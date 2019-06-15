@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-15 Fraunhofer ISE
+ * Copyright 2010-16 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -24,37 +24,37 @@ import java.io.IOException;
 
 public interface WMBusSap {
 
-	/**
-	 * Opens the serial port of this service access point and then configures the transceiver (e.g. sets the
-	 * transmission mode).
-	 * 
-	 * @throws IOException
-	 *             if any kind of error occurs while opening.
-	 */
-	public void open() throws IOException;
+    /**
+     * Opens the serial port of this service access point and then configures the transceiver (e.g. sets the
+     * transmission mode).
+     * 
+     * @throws IOException
+     *             if any kind of error occurs while opening.
+     */
+    public void open() throws IOException;
 
-	/**
-	 * Closes the service access point and its associated serial port.
-	 */
-	public void close();
+    /**
+     * Closes the service access point and its associated serial port.
+     */
+    public void close();
 
-	/**
-	 * Stores a pair of secondary address and cryptographic key. The stored keys are automatically used to decrypt
-	 * messages when {@link WMBusMessage#decode()} is called.
-	 * 
-	 * @param address
-	 *            the secondary address
-	 * @param key
-	 *            the cryptographic key
-	 */
-	public void setKey(SecondaryAddress address, byte[] key);
+    /**
+     * Stores a pair of secondary address and cryptographic key. The stored keys are automatically used to decrypt
+     * messages when {@link WMBusMessage#decode()} is called.
+     * 
+     * @param address
+     *            the secondary address
+     * @param key
+     *            the cryptographic key
+     */
+    public void setKey(SecondaryAddress address, byte[] key);
 
-	/**
-	 * Removes the stored key for the given secondary address.
-	 * 
-	 * @param address
-	 *            the secondary address for which to remove the stored key
-	 */
-	public void removeKey(SecondaryAddress address);
+    /**
+     * Removes the stored key for the given secondary address.
+     * 
+     * @param address
+     *            the secondary address for which to remove the stored key
+     */
+    public void removeKey(SecondaryAddress address);
 
 }

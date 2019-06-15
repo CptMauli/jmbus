@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-15 Fraunhofer ISE
+ * Copyright 2010-16 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -27,23 +27,23 @@ import org.junit.Test;
 
 public class MBusLPduTest {
 
-	@Test
-	public void testParser() throws IOException, DecodingException {
-		byte[] msg = MessagesTest.testMsg1;
+    @Test
+    public void testParser() throws IOException, DecodingException {
+        byte[] msg = MessagesTest.testMsg1;
 
-		MBusMessage mBusMessage = new MBusMessage(msg, msg.length);
+        MBusMessage mBusMessage = new MBusMessage(msg, msg.length);
 
-		Assert.assertEquals(1, mBusMessage.getAddressField());
+        Assert.assertEquals(1, mBusMessage.getAddressField());
 
-	}
+    }
 
-	@Test
-	public void testParser2() throws IOException, DecodingException {
-		byte[] msg = MessagesTest.testMsg4;
+    @Test
+    public void testParser2() throws IOException, DecodingException {
+        byte[] msg = MessagesTest.testMsg4;
 
-		MBusMessage mBusMessage = new MBusMessage(msg, msg.length);
+        MBusMessage mBusMessage = new MBusMessage(msg, msg.length);
 
-		Assert.assertEquals(0, mBusMessage.getAddressField());
+        Assert.assertEquals(0, mBusMessage.getAddressField());
 
-	}
+    }
 }

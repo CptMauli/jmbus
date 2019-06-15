@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-15 Fraunhofer ISE
+ * Copyright 2010-16 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -25,15 +25,15 @@ import org.junit.Test;
 
 public class BcdTest {
 
-	@Test
-	public void testSetGetValue() {
+    @Test
+    public void testSetGetValue() {
 
-		Bcd myBcd = new Bcd(new byte[] { 0x44, 0x44, 0x44, 0x44 });
+        Bcd myBcd = new Bcd(new byte[] { 0x44, 0x44, 0x44, 0x44 });
 
-		System.out.println(Integer.MAX_VALUE);
+        System.out.println(Integer.MAX_VALUE);
 
-		Assert.assertEquals(44444444, myBcd.intValue());
+        Assert.assertEquals(44444444, myBcd.intValue());
 
-	}
+    }
 
 }

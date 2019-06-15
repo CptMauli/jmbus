@@ -1,3 +1,14 @@
+buildscript {
+  repositories {
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
+  dependencies {
+    classpath "net.saliman:gradle-cobertura-plugin:2.2.8"
+  }
+}
+
 plugins {
   id "org.sonarqube" version "1.0"
 }
@@ -15,11 +26,18 @@ configure(javaProjects) {
   apply plugin: 'osgi'
   apply plugin: 'maven'
   apply plugin: 'signing'
+  apply plugin: 'net.saliman.cobertura'
 
   group = cfgGroup
 
-  sourceCompatibility = 1.7
-  targetCompatibility = 1.7
+  if (!project.properties.containsKey("cfgJavaVersion")) {
+    project.ext {
+      cfgJavaVersion = '1.7'
+    }
+  }
+
+  sourceCompatibility = cfgJavaVersion
+  targetCompatibility = cfgJavaVersion
 
   repositories { mavenCentral() }
 
@@ -35,37 +53,34 @@ configure(javaProjects) {
     itestCompile group: 'junit', name: 'junit', version: '4.12'
   }
 
-  //---------------------------------For Jenkins-----------------------------
-  apply plugin: 'jacoco'
-  
-  jacoco {
-    toolVersion = "0.7.1.201405082137"
-    reportsDir = file("/var/www/jenkins/${rootProject.name}/CodeCoverage")
-  }
-
-  jacocoTestReport {
-    reports {
-      xml.enabled false
-      csv.enabled true
-      csv.destination "/var/www/jenkins/${rootProject.name}/CodeCoverage/${project.name}/result.csv"
-      html.destination "/var/www/jenkins/${rootProject.name}/CodeCoverage/${project.name}/"
-    }
-  }
-
-  task jenkinsTest(type: Test){
-    reports.junitXml.destination = "/var/www/jenkins/${rootProject.name}/TestReport/${project.name}" 
-    reports.html.destination = "/var/www/jenkins/${rootProject.name}/TestReport/${project.name}"
-    dependsOn test
-  }
-
-  //------------------------------------------------------------------------------
-
   jar {
     manifest {
       version = project.version.replace('-','.');
     }
   }
 
+  cobertura {
+  
+    dependencies {
+      testCompile 'org.slf4j:slf4j-simple:1.6.1'
+    }
+    coverageFormats = ['html', 'xml']				
+    coverageIgnoreTrivial = true					
+    coverageIgnores = ['org.slf4j.Logger.*']			
+    coverageReportDir = new File("$buildDir/reports/cobertura")
+    coverageTestTasks {
+      project.tasks.withType(Test).matching {it.name == 'test'}
+    }
+ 	  
+  }
+
+  sonarqube {
+    properties {
+      property "sonar.java.coveragePlugin", "cobertura"
+      property "sonar.cobertura.reportPath", "build/reports/cobertura/coverage.xml"
+    }
+  }
+  
   task jarAll(type: Copy) {
     dependsOn(configurations.default.getAllArtifacts().getBuildDependencies())
 
@@ -132,6 +147,7 @@ configure(javaProjects) {
   javadoc {
     exclude '**/internal/**'
     exclude '**/java-gen/**'
+    exclude '**/app/**'
   }
 
 }
@@ -139,12 +155,14 @@ configure(javaProjects) {
 
 configure(repositoryProjects) {
 
-  signing {
-    if ( project.hasProperty('signing.keyId') ) {
-      sign configurations.archives
+  if (cfgSignPom) {
+    signing {
+      if ( project.hasProperty('signing.keyId') ) {
+	sign configurations.archives
+      }
     }
   }
-
+  
   uploadArchives {
     repositories {
       mavenDeployer {
@@ -180,8 +198,8 @@ configure(repositoryProjects) {
 
           developers {
             developer {
-              id 'sfeuerhahn'
-              name 'Stefan Feuerhahn'
+              id 'openmuc'
+              name 'OpenMUC Team'
             }
           }
         }
@@ -264,3 +282,8 @@ task (tar, type: Tar) {
   archiveName = project.name + "-" + project.version + ".tgz"
 }
 
+if (!javaProjects.contains(project)) {
+  task clean (type: Delete) {
+    delete "build"
+  }
+}

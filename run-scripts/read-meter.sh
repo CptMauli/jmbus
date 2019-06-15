@@ -1,7 +1,12 @@
 #!/bin/bash
 
-# Set APP_HOME
-# gradle start up script:
+JARS_LOCATION="../build/libs-all"
+MAIN_CLASS="org.openmuc.jmbus.app.ReadMeter"
+SYSPROPS=""
+PARAMS=""
+
+# from gradle start script:
+# Attempt to set SCRIPT_HOME
 # Resolve links: $0 may be a link
 PRG="$0"
 # Need this for relative symlinks.
@@ -15,20 +20,19 @@ while [ -h "$PRG" ] ; do
     fi
 done
 SAVED="`pwd`"
-cd "`dirname \"$PRG\"`/.." >&-
-APP_HOME="`pwd -P`"
-cd "$SAVED" >&-
+cd "`dirname \"$PRG\"`/" >/dev/null
+SCRIPT_HOME="`pwd -P`"
+cd "$SAVED" >/dev/null
 
 
-CLASSPATH=$(JARS=("$APP_HOME"/build/libs-all/*.jar); IFS=:; echo "${JARS[*]}")
+CLASSPATH=$(JARS=("$SCRIPT_HOME"/"$JARS_LOCATION"/*.jar); IFS=:; echo "${JARS[*]}")
 
-SYSPROPS=""
 for i in $@; do 
     if [[ $i == -D* ]]; then
-	SYSPROPS="$SYSPROPS $i";
+	    SYSPROPS="$SYSPROPS $i";
     else
-	PARAMS="$PARAMS $i";
+	    PARAMS="$PARAMS $i";
     fi
 done
 
-java $SYSPROPS -cp $CLASSPATH org.openmuc.jmbus.app.ReadMeter $PARAMS
+java $SYSPROPS -cp $CLASSPATH $MAIN_CLASS $PARAMS

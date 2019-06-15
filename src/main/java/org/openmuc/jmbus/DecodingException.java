@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-15 Fraunhofer ISE
+ * Copyright 2010-16 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -22,22 +22,22 @@ package org.openmuc.jmbus;
 
 public class DecodingException extends Exception {
 
-	private static final long serialVersionUID = 1735527302166708223L;
+    private static final long serialVersionUID = 1735527302166708223L;
 
-	public DecodingException() {
-		super();
-	}
+    public DecodingException() {
+        super();
+    }
 
-	public DecodingException(String s) {
-		super(s);
-	}
+    public DecodingException(String s) {
+        super(s);
+    }
 
-	public DecodingException(Throwable cause) {
-		super(cause);
-	}
+    public DecodingException(Throwable cause) {
+        super(cause);
+    }
 
-	public DecodingException(String s, Throwable cause) {
-		super(s, cause);
-	}
+    public DecodingException(String s, Throwable cause) {
+        super(s, cause);
+    }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-15 Fraunhofer ISE
+ * Copyright 2010-16 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -30,92 +30,92 @@ package org.openmuc.jmbus;
  */
 public class Bcd extends Number {
 
-	private static final long serialVersionUID = 790515601507532939L;
-	private final byte[] value;
+    private static final long serialVersionUID = 790515601507532939L;
+    private final byte[] value;
 
-	/**
-	 * Constructs a <code>Bcd</code> from the given bytes. The constructed Bcd will use the given byte array for
-	 * internal storage of its value. It is therefore recommended not to change the byte array after construction.
-	 * 
-	 * @param bcdBytes
-	 *            the byte array to be used for construction of the <code>Bcd</code>
-	 */
-	public Bcd(byte[] bcdBytes) {
-		value = bcdBytes;
-	}
+    /**
+     * Constructs a <code>Bcd</code> from the given bytes. The constructed Bcd will use the given byte array for
+     * internal storage of its value. It is therefore recommended not to change the byte array after construction.
+     * 
+     * @param bcdBytes
+     *            the byte array to be used for construction of the <code>Bcd</code>
+     */
+    public Bcd(byte[] bcdBytes) {
+        value = bcdBytes;
+    }
 
-	public byte[] getBytes() {
-		return value;
-	}
+    public byte[] getBytes() {
+        return value;
+    }
 
-	@Override
-	public String toString() {
-		byte[] ba;
-		int shift;
-		ba = new byte[value.length * 2];
-		int c = 0;
+    @Override
+    public String toString() {
+        byte[] ba;
+        int shift;
+        ba = new byte[value.length * 2];
+        int c = 0;
 
-		for (int i = value.length - 1; i >= 0; i--) {
-			shift = value[i] >> 4;
-			ba[c++] = (byte) ((shift & 0x0f) + 48);
+        for (int i = value.length - 1; i >= 0; i--) {
+            shift = value[i] >> 4;
+            ba[c++] = (byte) ((shift & 0x0f) + 48);
 
-			shift = value[i];
-			ba[c++] = (byte) ((shift & 0x0f) + 48);
-		}
+            shift = value[i];
+            ba[c++] = (byte) ((shift & 0x0f) + 48);
+        }
 
-		return new String(ba);
-	}
+        return new String(ba);
+    }
 
-	/**
-	 * Returns the value of this <code>Bcd</code> as a double.
-	 */
-	@Override
-	public double doubleValue() {
-		return longValue();
-	}
+    /**
+     * Returns the value of this <code>Bcd</code> as a double.
+     */
+    @Override
+    public double doubleValue() {
+        return longValue();
+    }
 
-	/**
-	 * Returns the value of this <code>Bcd</code> as a float.
-	 */
-	@Override
-	public float floatValue() {
-		return longValue();
-	}
+    /**
+     * Returns the value of this <code>Bcd</code> as a float.
+     */
+    @Override
+    public float floatValue() {
+        return longValue();
+    }
 
-	/**
-	 * Returns the value of this <code>Bcd</code> as an int.
-	 */
-	@Override
-	public int intValue() {
-		int result = 0;
-		int factor = 1;
+    /**
+     * Returns the value of this <code>Bcd</code> as an int.
+     */
+    @Override
+    public int intValue() {
+        int result = 0;
+        int factor = 1;
 
-		for (byte element : value) {
-			result += (element & 0x0f) * factor;
-			factor = factor * 10;
-			result += ((element >> 4) & 0x0f) * factor;
-			factor = factor * 10;
-		}
+        for (byte element : value) {
+            result += (element & 0x0f) * factor;
+            factor = factor * 10;
+            result += ((element >> 4) & 0x0f) * factor;
+            factor = factor * 10;
+        }
 
-		return result;
-	}
+        return result;
+    }
 
-	/**
-	 * Returns the value of this <code>Bcd</code> as a long.
-	 */
-	@Override
-	public long longValue() {
-		long result = 0l;
-		long factor = 1l;
+    /**
+     * Returns the value of this <code>Bcd</code> as a long.
+     */
+    @Override
+    public long longValue() {
+        long result = 0l;
+        long factor = 1l;
 
-		for (byte element : value) {
-			result += (element & 0x0f) * factor;
-			factor = factor * 10l;
-			result += ((element >> 4) & 0x0f) * factor;
-			factor = factor * 10l;
-		}
+        for (byte element : value) {
+            result += (element & 0x0f) * factor;
+            factor = factor * 10l;
+            result += ((element >> 4) & 0x0f) * factor;
+            factor = factor * 10l;
+        }
 
-		return result;
-	}
+        return result;
+    }
 
 }

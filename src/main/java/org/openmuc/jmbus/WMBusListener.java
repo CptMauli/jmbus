@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-15 Fraunhofer ISE
+ * Copyright 2010-16 Fraunhofer ISE
  *
  * This file is part of jMBus.
  * For more information visit http://www.openmuc.org
@@ -29,10 +29,10 @@ import java.io.IOException;
  */
 public interface WMBusListener {
 
-	public void newMessage(WMBusMessage message);
+    public void newMessage(WMBusMessage message);
 
-	public void discardedBytes(byte[] bytes);
+    public void discardedBytes(byte[] bytes);
 
-	public void stoppedListening(IOException e);
+    public void stoppedListening(IOException e);
 
 }
