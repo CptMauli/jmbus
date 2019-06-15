@@ -1,0 +1,25 @@
+0.9.8 Mar-15-2012
+-----------------
+- changed build system to gradle
+- modified documentation and usage example
+
+0.97 Oct-20-2011
+----------------
+- short message is send in one command in MBusLSAP to prevent timeout, thanks to Hakan Gonene
+
+0.96 Sep-19-2011
+----------------
+- added additional data types: data, date/time, varlen string
+- moved to maven
+
+0.94 Dec-3-2010
+---------------
+- Fixed build.xml file so a modfied library can be easily build.
+- Fixed some bugs when parsing M-Bus messages
+
+0.93 Nov-17-2010 
+----------------
+- Fixed bug with integer treatment
+- Implemented application reset command
+- added voltage and current VIB interpretation
+- Debug output switch with org.openmuc.jmbus.debug system property

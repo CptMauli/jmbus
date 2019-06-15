@@ -1,0 +1,48 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'osgi'
+apply plugin: 'maven'
+
+version = '0.9.8'
+
+sourceCompatibility = 1.5
+targetCompatibility = 1.5
+
+repositories { mavenCentral() }
+
+jar {
+  manifest {
+    version = project.version
+  }
+}
+
+dependencies {
+  testCompile group: 'junit', name: 'junit', version: '4.+'
+  compile files('dependencies/rxtxcomm_api-2.1.7.jar')
+}
+
+sourceSets {
+  sample
+}
+
+eclipse.pathVariables([GRADLE_USER_HOME:file(gradle.gradleUserHomeDir)])
+tasks.eclipse.dependsOn(cleanEclipse)
+
+task (tar, type: Tar) {
+  dependsOn(build)
+  dependsOn(javadoc)
+
+  compression = Compression.GZIP
+
+  into(project.archivesBaseName) {
+    from('./') {
+      include 'src/**/*'
+      include 'build/libs/**/*'
+      include 'build/docs/**/*'
+      include 'doc/**/*'
+      include 'licenses/**/*'
+      include 'build.gradle'
+      include 'dependencies/**/*'
+    }
+  }
+}
