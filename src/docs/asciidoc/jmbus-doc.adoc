@@ -21,6 +21,10 @@ and AMB8665-M from Amber, the IM871A-USB from IMST and the RC1180-MBUS
 rom Radiocrafts. The jMBus only supports passive listening for
 messages in modes S and T at the moment. Encryption modes 1 and 5 are supported.
 
+.M-Bus master in a sample wiring. 
+image::box.jpg[mbus box wiring,400]
+
+
 == Using jMBus
 
 === Wired M-Bus

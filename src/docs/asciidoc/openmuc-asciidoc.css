@@ -182,6 +182,12 @@ div.imageblock div.content { padding-left: 0; }
 span.image img { border-style: none; }
 a.image:visited { color: white; }
 
+img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto 
+}
+
 dl {
   margin-top: 0.8em;
   margin-bottom: 0.8em;

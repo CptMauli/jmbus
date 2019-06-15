@@ -1,3 +1,8 @@
+v3.0.1 27-Oct-2017
+------------------
+- Wireless M-Bus Imst: read length tag as unsigned
+- fixed bug with encrypted short header messages
+
 v3.0.0 23-Oct-2017
 ------------------
 - renamed MBusSap to MBusConnection
