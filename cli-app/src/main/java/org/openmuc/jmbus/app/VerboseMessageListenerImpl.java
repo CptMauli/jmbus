@@ -26,7 +26,7 @@ class VerboseMessageListenerImpl implements VerboseMessageListener {
         String data = DatatypeConverter.printHexBinary(debugMessage.getMessage());
         String dir = debugMessage.getMessageDirection().toString().toLowerCase();
         String msg = MessageFormat.format("{0} message: {1}", dir, data);
-        this.cliPrinter.printlnDebug("<verbose> %s </verbose>\n", msg);
+        this.cliPrinter.printlnDebug("<verbose> ", msg, " </verbose>");
     }
 
 }

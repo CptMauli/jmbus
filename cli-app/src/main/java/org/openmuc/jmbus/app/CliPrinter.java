@@ -28,7 +28,6 @@ public class CliPrinter {
         if (!printVerboseMsg.isSelected()) {
             return;
         }
-
         println(msg);
     }
 

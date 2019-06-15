@@ -5,6 +5,7 @@
  */
 package org.openmuc.jmbus;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -30,6 +31,10 @@ import org.openmuc.jmbus.transportlayer.TransportLayer;
  * @see MBusConnection#newTcpBuilder(String, int)
  */
 public class MBusConnection implements AutoCloseable {
+
+    private static final int START_BYTE = 0x68;
+    private static final int STOP_BYTE = 0x16;
+    private static final int SINGLE_CHARACTER = 0xe5;
 
     // 261 is the maximum size of a long frame
     private static final int MAX_MESSAGE_SIZE = 261;
@@ -402,7 +407,7 @@ public class MBusConnection implements AutoCloseable {
             outputBuffer[1] = (byte) (cmd);
             outputBuffer[2] = (byte) (slaveAddr);
             outputBuffer[3] = (byte) (cmd + slaveAddr);
-            outputBuffer[4] = 0x16;
+            outputBuffer[4] = STOP_BYTE;
 
             verboseMessage(MessageDirection.SEND, outputBuffer, 0, 5);
 
@@ -412,10 +417,10 @@ public class MBusConnection implements AutoCloseable {
 
     void sendLongMessage(int slaveAddr, int controlField, int ci, int length, byte[] data) throws IOException {
         synchronized (os) {
-            outputBuffer[0] = 0x68;
+            outputBuffer[0] = START_BYTE;
             outputBuffer[1] = (byte) (length + 3);
             outputBuffer[2] = (byte) (length + 3);
-            outputBuffer[3] = 0x68;
+            outputBuffer[3] = START_BYTE;
             outputBuffer[4] = (byte) controlField;
             outputBuffer[5] = (byte) slaveAddr;
             outputBuffer[6] = (byte) ci;
@@ -426,7 +431,7 @@ public class MBusConnection implements AutoCloseable {
 
             outputBuffer[length + 7] = computeChecksum(length, outputBuffer);
 
-            outputBuffer[length + 8] = 0x16;
+            outputBuffer[length + 8] = STOP_BYTE;
 
             verboseMessage(MessageDirection.SEND, outputBuffer, 0, length + 9);
 
@@ -444,13 +449,11 @@ public class MBusConnection implements AutoCloseable {
 
     MBusMessage receiveMessage() throws IOException {
         byte[] receivedBytes;
-
         int b0 = is.read();
-        if (b0 == 0xe5) {
-            // messageLength = 1;
+        if (b0 == SINGLE_CHARACTER) {
             receivedBytes = new byte[] { (byte) b0 };
         }
-        else if ((b0 & 0xff) == 0x68) {
+        else if ((b0 & 0xff) == START_BYTE) {
             int b1 = is.readByte() & 0xff;
 
             /**
@@ -462,9 +465,12 @@ public class MBusConnection implements AutoCloseable {
             receivedBytes[0] = (byte) b0;
             receivedBytes[1] = (byte) b1;
 
-            int lenRead = messageLength - 2;
+            is.readFully(receivedBytes, 2, messageLength - 2);
 
-            is.readFully(receivedBytes, 2, lenRead);
+            if (receivedBytes[messageLength - 1] != STOP_BYTE) {
+                receivedBytes = readUntilStop(receivedBytes, messageLength);
+            }
+
         }
         else {
             throw new IOException(String.format("Received unknown message: %02X", b0));
@@ -473,6 +479,23 @@ public class MBusConnection implements AutoCloseable {
         verboseMessage(MessageDirection.RECEIVE, receivedBytes, 0, receivedBytes.length);
 
         return MBusMessage.decode(receivedBytes, receivedBytes.length);
+    }
+
+    private byte[] readUntilStop(byte[] receivedBytes, int messageLength) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(messageLength);
+        baos.write(receivedBytes);
+        byte read = is.readByte();
+        baos.write(read);
+        try {
+            while (read != STOP_BYTE) {
+                read = is.readByte();
+                baos.write(read);
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+        receivedBytes = baos.toByteArray();
+        return receivedBytes;
     }
 
     private void verboseMessage(MessageDirection direction, byte[] array, int from, int to) {

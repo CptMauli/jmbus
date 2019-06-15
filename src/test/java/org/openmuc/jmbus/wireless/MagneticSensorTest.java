@@ -5,7 +5,6 @@
  */
 package org.openmuc.jmbus.wireless;
 
-import static javax.xml.bind.DatatypeConverter.parseHexBinary;
 import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
@@ -17,6 +16,7 @@ import org.openmuc.jmbus.DataRecord.Description;
 import org.openmuc.jmbus.DecodingException;
 import org.openmuc.jmbus.DeviceType;
 import org.openmuc.jmbus.SecondaryAddress;
+import org.openmuc.jmbus.Utils;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -38,7 +38,7 @@ public class MagneticSensorTest {
     @Parameters(method = "testMagneticSensorData")
     public void testMagneticSensor(String lexicalXSDHexBinary, int expectedNumOfRec, double expectedScaledVal,
             Description expectedDesc) throws DecodingException {
-        byte[] sensorPacket = parseHexBinary(lexicalXSDHexBinary);
+        byte[] sensorPacket = Utils.hexStringToByteArray(lexicalXSDHexBinary);
         WMBusMessage wmBusDataMessage = WMBusMessage.decode(sensorPacket, 0, new HashMap<SecondaryAddress, byte[]>());
         wmBusDataMessage.getVariableDataResponse().decode();
 

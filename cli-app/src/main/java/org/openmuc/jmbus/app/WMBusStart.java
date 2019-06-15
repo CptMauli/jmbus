@@ -5,10 +5,9 @@
  */
 package org.openmuc.jmbus.app;
 
-import static javax.xml.bind.DatatypeConverter.printHexBinary;
-
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.openmuc.jmbus.DecodingException;
@@ -17,6 +16,7 @@ import org.openmuc.jmbus.wireless.WMBusListener;
 import org.openmuc.jmbus.wireless.WMBusMessage;
 
 class WMBusStart {
+    private static final SimpleDateFormat DF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
 
     public static void wmbus(final WMBusConnection wmBusConnection) throws IOException {
 
@@ -45,29 +45,34 @@ class WMBusStart {
 
         @Override
         public void newMessage(WMBusMessage message) {
-            this.cliPrinter.printlnInfo(MessageFormat.format("\n# {0} - new message: ", new Date()));
+            this.cliPrinter
+                    .printlnInfo(MessageFormat.format("\n\n{0} ------- New Message -------", DF.format(new Date())));
+            this.cliPrinter.printlnDebug("Message Bytes: ", message.asBlob());
 
             try {
                 message.getVariableDataResponse().decode();
             } catch (DecodingException e) {
-                this.cliPrinter.printlnInfo("Unable to fully decode received message: \n" + e.getMessage());
-                this.cliPrinter.printlnDebug("Complete Message:\n" + printHexBinary(message.asBlob()));
+                this.cliPrinter.printlnInfo("Unable to fully decode received message:\n", e.getMessage());
             }
 
-            this.cliPrinter.printInfo(MessageFormat.format("{0}\n", message.toString()));
+            this.cliPrinter.printInfo(MessageFormat.format("{0}\n", message));
         }
 
         @Override
         public void discardedBytes(byte[] bytes) {
-            this.cliPrinter.printlnInfo("Bytes discarded: " + printHexBinary(bytes));
+            this.cliPrinter.printlnInfo("Bytes discarded: ", bytes);
             this.cliPrinter.printlnInfo();
         }
 
         @Override
         public void stoppedListening(IOException e) {
-            this.cliPrinter.printlnInfo("Stopped listening for new messages because: " + e.getMessage());
+            this.cliPrinter.printlnInfo("Stopped listening for new messages because: ", e.getMessage());
         }
 
+    }
+
+    private WMBusStart() {
+        // hide this
     }
 
 }

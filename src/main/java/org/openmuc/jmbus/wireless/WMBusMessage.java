@@ -122,7 +122,7 @@ public class WMBusMessage {
             builder.append("Message was received with signal strength: ").append(signalStrengthInDBm).append("dBm\n");
         }
 
-        return builder.append("control field: ")
+        return builder.append("Control Field: ")
                 .append(String.format("0x%02X", controlField))
                 .append("\nSecondary Address -> ")
                 .append(secondaryAddress)

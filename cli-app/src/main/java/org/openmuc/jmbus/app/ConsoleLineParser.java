@@ -35,6 +35,11 @@ import org.openmuc.jmbus.wireless.WMBusMode;
 
 class ConsoleLineParser {
 
+    private static final String READ = "read";
+    private static final String WRITE = "write";
+    private static final String SCAN = "scan";
+    private static final String WMBUS = "wmbus";
+
     private final CliParser cliParser;
 
     private static final int WILDCARD_MASK_LENGTH = 8;
@@ -150,11 +155,11 @@ class ConsoleLineParser {
         wirelessParams.add(key);
 
         cliParser = new CliParser("jmbus-app", "jmbus master application to access meters wired and wireless");
-        cliParser.addParameterGroup("read", readParams);
-        cliParser.addParameterGroup("write", writeParams);
-        cliParser.addParameterGroup("scan", scanParams);
+        cliParser.addParameterGroup(READ, readParams);
+        cliParser.addParameterGroup(WRITE, writeParams);
+        cliParser.addParameterGroup(SCAN, scanParams);
 
-        cliParser.addParameterGroup("wmbus", wirelessParams);
+        cliParser.addParameterGroup(WMBUS, wirelessParams);
 
         this.cliPrinter = new CliPrinter(this.cliParser.getUsageString(), this.verbose);
     }
@@ -176,17 +181,17 @@ class ConsoleLineParser {
 
         try {
             switch (cliParser.getSelectedGroup().toLowerCase()) {
-            case "read":
+            case READ:
                 CliConnection.read(this, (MBusConnection) builder.build(), cliPrinter);
                 break;
-            case "write":
+            case WRITE:
                 CliConnection.write(this, (MBusConnection) builder.build(), cliPrinter);
                 break;
-            case "scan":
+            case SCAN:
                 CliConnection.scan(this.wildcard.getValue(), secondaryScan.isSelected(),
                         (MBusConnection) builder.build(), cliPrinter);
                 break;
-            case "wmbus":
+            case WMBUS:
                 WMBusConnection wmBusConnection = (WMBusConnection) builder.build();
                 Map<SecondaryAddress, byte[]> keyPairs = getKeyPairs();
                 for (Entry<SecondaryAddress, byte[]> keyPair : keyPairs.entrySet()) {
@@ -217,7 +222,7 @@ class ConsoleLineParser {
     private Builder<?, ?> newTcpBuilder() {
         TcpBuilder<?, ?> connectionBuilder;
 
-        if (cliParser.getSelectedGroup().equalsIgnoreCase("wmbus")) {
+        if (cliParser.getSelectedGroup().equalsIgnoreCase(WMBUS)) {
             WMBusManufacturer wmBusManufacturer = parseManufacturer();
             connectionBuilder = new WMBusTcpBuilder(wmBusManufacturer, new WMBusStart.WMBusReceiver(this.cliPrinter),
                     getHostAddress(), getPort()).setMode(getWMBusMode());
@@ -233,7 +238,7 @@ class ConsoleLineParser {
         SerialBuilder<?, ?> connectionBuilder;
 
         String cmmPort = this.comPort.getValue();
-        if (cliParser.getSelectedGroup().equalsIgnoreCase("wmbus")) {
+        if (cliParser.getSelectedGroup().equalsIgnoreCase(WMBUS)) {
 
             WMBusManufacturer wmBusManufacturer = parseManufacturer();
 
@@ -438,22 +443,21 @@ class ConsoleLineParser {
                             "The secondary address needs 16 signs, but has " + secondaryAddressLength + '.', true);
                 }
                 else {
-                    try {
-                        byte[] secondaryAddressbytes = DatatypeConverter.parseHexBinary(keyPair[0]);
-                        SecondaryAddress secondaryAddress = SecondaryAddress.newFromWMBusLlHeader(secondaryAddressbytes,
-                                0);
-                        try {
-                            byte[] key = DatatypeConverter.parseHexBinary(keyPair[1]);
-                            keyPairValues.put(secondaryAddress, key);
-                        } catch (IllegalArgumentException e) {
-                            this.cliPrinter.printError("The key is not hexadecimal.", true);
-                        }
-                    } catch (NumberFormatException e) {
-                        this.cliPrinter.printError("The secondary address is not hexadecimal.", true);
-                    }
-
+                    parseSecondaryAddress(keyPair);
                 }
             }
+        }
+    }
+
+    private void parseSecondaryAddress(String[] keyPair) {
+        try {
+            byte[] secondaryAddressbytes = DatatypeConverter.parseHexBinary(keyPair[0]);
+            SecondaryAddress secondaryAddress = SecondaryAddress.newFromWMBusLlHeader(secondaryAddressbytes, 0);
+            keyPairValues.put(secondaryAddress, DatatypeConverter.parseHexBinary(keyPair[1]));
+        } catch (NumberFormatException e) {
+            this.cliPrinter.printError("The secondary address is not hexadecimal.", true);
+        } catch (IllegalArgumentException e) {
+            this.cliPrinter.printError("The key is not hexadecimal.", true);
         }
     }
 

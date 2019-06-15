@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.bind.DatatypeConverter;
-
 import org.junit.Test;
 import org.openmuc.jmbus.DataRecord.DataValueType;
 
@@ -17,14 +15,14 @@ public class VariableDataStructureTest {
     @Test
     public void test1() throws Exception {
         SecondaryAddress linkLayerSecondaryAddress = SecondaryAddress
-                .newFromWMBusLlHeader(DatatypeConverter.parseHexBinary("2423759468372507"), 0);
+                .newFromWMBusLlHeader(Utils.hexStringToByteArray("2423759468372507"), 0);
 
         final byte[] key = "HalloWorldTestPW".getBytes();
         Map<SecondaryAddress, byte[]> keyMap = new HashMap<>();
         keyMap.put(linkLayerSecondaryAddress, key);
 
-        byte[] encrypt = DatatypeConverter.parseHexBinary(
-                "7ACB5030055E861434F34A14AE2B9973AEE9811E32578336455E9AC7E7EF960B2253CA7F2BB6632C35E3DD95D66FE96C699A298A53");
+        byte[] encrypt = Utils.hexStringToByteArray("7ACB5030055E861434F34A14AE2B9973AEE9811E32578336455E9AC7E7EF"
+                + "960B2253CA7F2BB6632C35E3DD95D66FE96C699A298A53");
 
         VariableDataStructure vds = new VariableDataStructure(encrypt, 0, encrypt.length, linkLayerSecondaryAddress,
                 keyMap);

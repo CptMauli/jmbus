@@ -5,7 +5,6 @@
  */
 package org.openmuc.jmbus.wireless;
 
-import static javax.xml.bind.DatatypeConverter.parseHexBinary;
 import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
@@ -15,15 +14,16 @@ import org.junit.Test;
 import org.openmuc.jmbus.DataRecord;
 import org.openmuc.jmbus.DecodingException;
 import org.openmuc.jmbus.SecondaryAddress;
+import org.openmuc.jmbus.Utils;
 
 public class DecryptionTest {
 
-    private final byte[] testFrameKamstrupEncrypted = parseHexBinary(
-            "24442D2C692845631B168D3050209CD621B006B1140AEF4953AE5B86FAFC0B00E70705B84689");
+    private final byte[] testFrameKamstrupEncrypted = Utils
+            .hexStringToByteArray("24442D2C692845631B168D3050209CD621B006B1140AEF4953AE5B86FAFC0B00E70705B84689");
 
     @Test
     public void testDecryption() throws Exception {
-        byte[] goodKey = parseHexBinary("4E5508544202058100DFEFA06B0934A5");
+        byte[] goodKey = Utils.hexStringToByteArray("4E5508544202058100DFEFA06B0934A5");
 
         WMBusMessage wmBusDataMessage = decodewith(goodKey);
 
@@ -35,7 +35,7 @@ public class DecryptionTest {
 
     @Test(expected = DecodingException.class)
     public void testDecryptionWrongKey() throws Exception {
-        byte[] wrongKey = parseHexBinary("4E5508544202058100DFEFA06B0934AF");
+        byte[] wrongKey = Utils.hexStringToByteArray("4E5508544202058100DFEFA06B0934AF");
 
         decodewith(wrongKey);
     }

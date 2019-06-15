@@ -1,3 +1,17 @@
+v3.2.0 12-Nov-2018
+------------------
+ - added reading M-Bus messages with wrong length field
+ - added new IEC 62056-6-2 2017 DLMS units and fixed old one
+ - added verbose messages for wireless M-Bus in jmbus-app 
+ - added flush TCP input stream after opening
+ - thanks to Tomáš Procházka for:
+    - Amber device:
+        * fixed not working RSSI
+        * added UART_CMD_Out_Enable detection
+        * added CRC check if UART_CMD_Out_Enable
+    - fixed possible ArrayIndexOutOfBoundsException in decryptAesCbcIv()
+    - fixed windows start script
+
 v3.1.1 16-Jul-2018
 ------------------
 - added connection timeout option for TCP connections, default is 10 s

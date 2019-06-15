@@ -18,7 +18,7 @@ import org.openmuc.jmbus.DecodingException;
 import org.openmuc.jmbus.transportlayer.TransportLayer;
 
 /**
- * Was tested with the IMST iM871A-USB Wireless M-Bus stick.<br>
+ * Was tested with IMST iM871A-USB Wireless M-Bus stick.<br>
  */
 class WMBusConnectionImst extends AbstractWMBusConnection {
 
@@ -125,7 +125,7 @@ class WMBusConnectionImst extends AbstractWMBusConnection {
         case C:
             return 0x08; // Link/Radio Mode: C2 with telegram format A (C2 + format B = 0x09)
         default:
-            String msg = MessageFormat.format("wMBUS Mode ''{0}'' is not supported", mode.toString());
+            String msg = MessageFormat.format("wMBUS Mode ''{0}'' is not supported", mode);
             throw new IOException(msg);
         }
     }
@@ -240,6 +240,9 @@ class WMBusConnectionImst extends AbstractWMBusConnection {
         public static final byte RADIOLINK_MSG_DATA_REQ = 0x04;
         public static final byte RADIOLINK_MSG_DATA_RSP = 0x05;
 
+        private Const() {
+            // hide constructor
+        }
     }
 
     /**
@@ -292,7 +295,8 @@ class WMBusConnectionImst extends AbstractWMBusConnection {
 
         public static HciMessage decode(TransportLayer transportLayer) throws IOException {
             DataInputStream is = transportLayer.getInputStream();
-            byte b0, b1;
+            byte b0;
+            byte b1;
 
             transportLayer.setTimeout(0);
             b0 = is.readByte();

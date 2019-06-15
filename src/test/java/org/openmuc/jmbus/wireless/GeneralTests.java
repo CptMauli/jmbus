@@ -5,7 +5,6 @@
  */
 package org.openmuc.jmbus.wireless;
 
-import static javax.xml.bind.DatatypeConverter.parseHexBinary;
 import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
@@ -15,6 +14,7 @@ import org.junit.runner.RunWith;
 import org.openmuc.jmbus.DataRecord;
 import org.openmuc.jmbus.DataRecord.Description;
 import org.openmuc.jmbus.SecondaryAddress;
+import org.openmuc.jmbus.Utils;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -34,7 +34,7 @@ public class GeneralTests {
     @Parameters(method = "testData")
     public void test(String lexicalXSDHexBinary, String expectedManId, double expectedDataValue,
             Description expectedDesc) throws Exception {
-        byte[] errorPacket = parseHexBinary(lexicalXSDHexBinary);
+        byte[] errorPacket = Utils.hexStringToByteArray(lexicalXSDHexBinary);
         WMBusMessage wmBusDataMessage = WMBusMessage.decode(errorPacket, 0, new HashMap<SecondaryAddress, byte[]>());
         wmBusDataMessage.getVariableDataResponse().decode();
 

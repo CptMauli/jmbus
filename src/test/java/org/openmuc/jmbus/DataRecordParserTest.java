@@ -5,7 +5,6 @@
  */
 package org.openmuc.jmbus;
 
-import static javax.xml.bind.DatatypeConverter.parseHexBinary;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -26,7 +25,7 @@ public class DataRecordParserTest {
     @Test
     @Parameters({ "0704FFFFFFFFFFFFFFFF, -1", "07041223344556677812, 1330927310113874706" })
     public void decode1(String bytesStr, long expected) throws DecodingException {
-        byte[] bytes = parseHexBinary(bytesStr);
+        byte[] bytes = Utils.hexStringToByteArray(bytesStr);
 
         long val = decodeAndGetVal(bytes);
 
@@ -35,7 +34,7 @@ public class DataRecordParserTest {
 
     private static Long decodeAndGetVal(byte[] bytes) throws DecodingException {
         DataRecord dataRecord = new DataRecord();
-        dataRecord.decode(bytes, 0, bytes.length);
+        dataRecord.decode(bytes, 0);
 
         Object obj = dataRecord.getDataValue();
 
@@ -45,8 +44,8 @@ public class DataRecordParserTest {
     }
 
     public Object testINT32Data() {
-        Object[] p1 = { parseHexBinary("0403e4050000"), 1508L };
-        Object[] p2 = { parseHexBinary("0403ffffffff"), -1L };
+        Object[] p1 = { Utils.hexStringToByteArray("0403e4050000"), 1508L };
+        Object[] p2 = { Utils.hexStringToByteArray("0403ffffffff"), -1L };
         return new Object[] { p1, p2 };
     }
 
@@ -56,7 +55,7 @@ public class DataRecordParserTest {
 
         DataRecord dataRecord = new DataRecord();
 
-        dataRecord.decode(bytes, 0, bytes.length);
+        dataRecord.decode(bytes, 0);
 
         Object obj = dataRecord.getDataValue();
 
@@ -110,10 +109,10 @@ public class DataRecordParserTest {
     @Parameters(method = "testDataRecordsValues")
     public void testDataRecords(String bytesStr, Description desc, DlmsUnit unit, int scaler, Long data)
             throws DecodingException {
-        byte[] bytes = parseHexBinary(bytesStr);
+        byte[] bytes = Utils.hexStringToByteArray(bytesStr);
 
         DataRecord dataRecord = new DataRecord();
-        dataRecord.decode(bytes, 0, bytes.length);
+        dataRecord.decode(bytes, 0);
 
         assertEquals(desc, dataRecord.getDescription());
         assertEquals(unit, dataRecord.getUnit());
