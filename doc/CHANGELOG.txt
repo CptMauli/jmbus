@@ -1,39 +1,51 @@
+v3.0.0 23-Oct-2017
+------------------
+- renamed MBusSap to MBusConnection
+- changed API for supporting more types of transport layer, 
+  only configuration has changed
+    * added connection builder
+    * added transport layer abstraction 
+- added M-Bus TCP support
+- added jmbus-app TCP support
+- thanks to Mr Pirscoveanu from Neogrid Technologies for adding:
+    * AES/CTR/NoPadding decryption
+    * Kamstrup decoding for long and short headers
+- fixed wrong parsing of negative INT48 numbers (thanks to Mr Minde
+  from ISC Konstanz)
+- added creation of initialization vector with long header
+- some system output improvements in jmbus app
+- fixed NegativeArraySizeException with IMST IM871A Sticks
+- moved wireless part to package org.openmuc.jmbus.wireless
+- moved cli application to subproject
+- SecondaryAddress rename instantiation methods
+- added methods for individual M-Bus messages 
+
 v2.3.0 18-Jul-2017
 ------------------
-
 - changed license from GPL to MPL v2.0 (Mozilla Public License)
-
 - depends on jRxTx instead of RXTX library for serial
   communication. jRxTx is compatible to the RXTX native libraries.
-
 - added IMST wireless M-Bus transceivers support. Tested with
   IM871A-USB
-
 - refactored sample apps, one start script for all now
-
 - new version of CLI parser for sample apps
-
 - added verbose messages as listener
-
 - added automatic resynchronization when receiving wM-Bus data using
   Amber stick, thanks to Felix Wagner
-
 - SecondaryAddress.java is comparable now
-
 - removed printouts in scan secondary address, added message listener
-
 - fixed smaller bugs and typos
 
 
 v2.2.2 04-Jul-2016
 ------------------
 - added support for negative BCDs thanks to Mr Pirscoveanu from
-  neogrid
-- fixed bug receiving a second wireless M-Bus message right aftern
+  Neogrid Technologies
+- fixed bug receiving a second wireless M-Bus message right after
   another.
 - added support for additional units from the newest IEC 62056-6-2
   standard
-- aded gradle wrapper scripts to distribution so that gradle
+- added gradle wrapper scripts to distribution so that gradle
   installation is not needed
 
 v2.2.1 26-Feb-2016
