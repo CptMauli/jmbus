@@ -71,9 +71,12 @@ class ConsoleLineParser {
             .setMandatory()
             .buildStringParameter("address");
 
-    private final IntCliParameter timeout = new CliParameterBuilder("-t")
-            .setDescription("The timeout in milli seconds.")
+    private final IntCliParameter timeout = new CliParameterBuilder("-t").setDescription("The timeout in milliseconds.")
             .buildIntParameter("timeout", 3000);
+
+    private final IntCliParameter tcpConnectionTimeout = new CliParameterBuilder("-ct")
+            .setDescription("The TCP connection timeout in milliseconds.")
+            .buildIntParameter("connectionTimeout", 10000);
 
     private final FlagCliParameter verbose = new CliParameterBuilder("-v")
             .setDescription("Enable verbose mode to print debug messages to standard out.")
@@ -222,6 +225,7 @@ class ConsoleLineParser {
         else {
             connectionBuilder = MBusConnection.newTcpBuilder(getHostAddress(), getPort()).setTimeout(getTimeout());
         }
+        connectionBuilder.setConnectionTimeout(getConnectionTimeout());
         return connectionBuilder.setTimeout(getTimeout());
     }
 
@@ -294,6 +298,10 @@ class ConsoleLineParser {
 
     public int getTimeout() {
         return timeout.getValue();
+    }
+
+    public int getConnectionTimeout() {
+        return tcpConnectionTimeout.getValue();
     }
 
     public String getWildcard() {

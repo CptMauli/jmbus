@@ -1,7 +1,7 @@
 
 project.ext {
 
-  cfgVersion = "3.1.0"
+  cfgVersion = "3.1.1"
   
   cfgGroup = "org.openmuc"
 
@@ -26,9 +26,11 @@ project.ext {
     it.getPath() == ":"
   }
  
+  repositoryProjects = allprojects.findAll {
+    it.getPath() == ":"
+  }
+  
   docProjects = distributionProjects
-
-  repositoryProjects = distributionProjects
 }
 
 tasks.withType(Tar) {

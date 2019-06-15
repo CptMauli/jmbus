@@ -1,3 +1,8 @@
+v3.1.1 16-Jul-2018
+------------------
+- added connection timeout option for TCP connections, default is 10 s
+- only decode vdr if is not decoded
+
 v3.1.0 18-Apr-2018
 ------------------
 - added wireless M-Bus TCP support

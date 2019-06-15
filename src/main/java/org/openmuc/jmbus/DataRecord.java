@@ -47,12 +47,12 @@ public class DataRecord {
      *
      */
     public enum DataValueType {
-        LONG,
-        DOUBLE,
-        DATE,
-        STRING,
-        BCD,
-        NONE;
+    LONG,
+    DOUBLE,
+    DATE,
+    STRING,
+    BCD,
+    NONE;
     }
 
     /**

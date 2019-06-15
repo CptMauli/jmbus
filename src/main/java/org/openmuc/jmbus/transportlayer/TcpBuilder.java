@@ -13,6 +13,7 @@ public abstract class TcpBuilder<T, S extends TcpBuilder<T, S>> extends Builder<
 
     private String hostAddress;
     private int port;
+    private int connectionTimeout = 10000; // 10 s
 
     /**
      * Constructor of the TCP/IP Settings Builder, for connecting M-Bus devices over TCP/IP.
@@ -52,8 +53,21 @@ public abstract class TcpBuilder<T, S extends TcpBuilder<T, S>> extends Builder<
         return self();
     }
 
+    /**
+     * Sets the TCP connection timeout.
+     * 
+     * @param connectionTimeout
+     *            the TCP connection timeout
+     * @return the builder itself
+     * 
+     **/
+    public S setConnectionTimeout(int connectionTimeout) {
+        this.connectionTimeout = connectionTimeout;
+        return self();
+    }
+
     @Override
     protected TransportLayer buildTransportLayer() {
-        return new TcpLayer(hostAddress, port, getTimeout());
+        return new TcpLayer(hostAddress, port, connectionTimeout, getTimeout());
     }
 }

@@ -9,22 +9,26 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.text.MessageFormat;
 
 class TcpLayer implements TransportLayer {
     private final String hostAddress;
     private final int port;
     private final int timeout;
+    private final int connectionTimeout;
 
     private Socket client;
     private DataOutputStream os;
     private DataInputStream is;
 
-    TcpLayer(String hostAddress, int port, int timeout) {
+    TcpLayer(String hostAddress, int port, int connectionTimeout, int timeout) {
         this.hostAddress = hostAddress;
         this.port = port;
         this.timeout = timeout;
+        this.connectionTimeout = connectionTimeout;
     }
 
     @Override
@@ -32,7 +36,9 @@ class TcpLayer implements TransportLayer {
         InetAddress hostname = InetAddress.getByName(hostAddress);
 
         try {
-            this.client = new Socket(hostname, port);
+            SocketAddress socketAddress = new InetSocketAddress(hostname, port);
+            this.client = new Socket();
+            this.client.connect(socketAddress, connectionTimeout);
             this.client.setSoTimeout(timeout);
         } catch (IOException e) {
             String msg = MessageFormat.format("Connecting to {0}:{1} failed.", hostname, port);

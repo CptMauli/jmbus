@@ -100,10 +100,10 @@ configure(javaProjects) {
 
       sourceSets.main.output.classesDirs.each{ f ->
         // Copy directories from main source to instrumented path
-	    copy {
-		  from f
-		  into buildDir.path + '/instrumented_classes'
-	    }
+        copy {
+          from f
+          into buildDir.path + '/instrumented_classes'
+        }
       }
 
       ant.instrument(destdir: outputDir) {
