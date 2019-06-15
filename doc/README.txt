@@ -34,26 +34,31 @@ For the latest release of this software visit http://www.openmuc.org .
 Please send us any code improvements so we can integrate them in our
 distribution.
 
-Read Meter Application:
------------------------
+ReadMeter & ScanForMeters Applications:
+---------------------------------------
 The library includes an application that reads a given meter and
 prints the received data to stdout. This application can also be
 used as an example on how to use the the library. You can find the
-source code of ReadMeter.java in src/main/java/org/openmuc/jmbus/.
+source code of ReadMeter.java in src/main/java/org/openmuc/jmbus/app/.
 
 You can can execute ReadMeter from the console with the following
 command (from this projects root directory):
 Linux/Unix:
->java -cp "build/libs/jmbus-<version>.jar:dependencies/rxtxcomm_api-2.2pre2-11_bundle.jar" org.openmuc.jmbus.ReadMeter
+>java -cp "build/libs/jmbus-<version>.jar:dependencies/rxtxcomm_api-2.2pre2-11_bundle.jar" org.openmuc.jmbus.app.ReadMeter
 Windows:
->java -cp "build\libs\jmbus-<version>.jar;dependencies\rxtxcomm_api-2.2pre2-11_bundle.jar" org.openmuc.jmbus.ReadMeter
+>java -cp "build\libs\jmbus-<version>.jar;dependencies\rxtxcomm_api-2.2pre2-11_bundle.jar" org.openmuc.jmbus.app.ReadMeter
 
 Sometimes you might have to add a system property so that java finds
 the jni libs. e.g.: -Djava.library.path=/usr/lib/jni
 
-As an alternative you can create Eclipse project files as explained here:
-http://www.openmuc.org/index.php?id=28 and run ReadMeter from within
-Eclipse
+In addition to the library includes the
+org.openmuc.jmbus.app.ScanForMeters application that can be used to
+scan all 250 primary addresses for meters.
+
+Instead of running the applications from the console you can create
+Eclipse project files as explained here:
+http://www.openmuc.org/index.php?id=28 and run them from within
+Eclipse.
 
 RXTX - Java library for serial communication
 --------------------------------------------

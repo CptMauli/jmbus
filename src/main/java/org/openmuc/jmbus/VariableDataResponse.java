@@ -38,7 +38,7 @@ public final class VariableDataResponse {
 	// primary address for wired M-Bus, is not used for wireless M-Bus
 	public byte address;
 
-	public byte[] meterID; // secondary address for wired M-Bus
+	public byte[] Id; // secondary address for wired M-Bus
 	public short manufacturerID;
 	public byte version;
 	public byte deviceType; // medium
@@ -50,10 +50,10 @@ public final class VariableDataResponse {
 
 	public byte[] manufacturerData;
 
-	public VariableDataResponse(byte address, byte[] meterID, short manufacturerID, byte version, byte deviceType,
+	VariableDataResponse(byte address, byte[] id, short manufacturerID, byte version, byte deviceType,
 			byte accessNumber, byte status) {
 		this.address = address;
-		this.meterID = meterID;
+		Id = id;
 		this.manufacturerID = manufacturerID;
 		this.version = version;
 		this.deviceType = deviceType;
@@ -61,8 +61,8 @@ public final class VariableDataResponse {
 		this.status = status;
 	}
 
-	public VariableDataResponse() {
-		meterID = new byte[4];
+	VariableDataResponse() {
+		Id = new byte[4];
 		variableDataBlocks = new Vector<VariableDataBlock>();
 	}
 
@@ -70,11 +70,11 @@ public final class VariableDataResponse {
 		return address;
 	}
 
-	public byte[] getMeterID() {
-		return meterID;
+	public Bcd getId() {
+		return new Bcd(Id);
 	}
 
-	public String getManufacturerID() {
+	public String getManufacturerId() {
 		char c, c1, c2;
 
 		c = (char) ((manufacturerID & 0x001f) + 64);
@@ -82,7 +82,7 @@ public final class VariableDataResponse {
 		manufacturerID = (short) (manufacturerID >> 5);
 		c1 = (char) ((manufacturerID & 0x001f) + 64);
 
-		manufacturerID = (manufacturerID);
+		manufacturerID = (short) (manufacturerID >> 5);
 		c2 = (char) ((manufacturerID & 0x001f) + 64);
 
 		return "" + c2 + c1 + c;
@@ -92,8 +92,8 @@ public final class VariableDataResponse {
 		return version;
 	}
 
-	public byte getDeviceType() {
-		return deviceType;
+	public DeviceType getDeviceType() {
+		return DeviceType.newDevice(deviceType);
 	}
 
 	public byte getAccessNumber() {
@@ -112,16 +112,12 @@ public final class VariableDataResponse {
 		return manufacturerData;
 	}
 
-	public boolean hasManufacturerData() {
-		return manufacturerData != null;
-	}
-
 	private void parseLongHeader(ByteBuffer buf) {
 
-		meterID[0] = buf.get();
-		meterID[1] = buf.get();
-		meterID[2] = buf.get();
-		meterID[3] = buf.get();
+		Id[0] = buf.get();
+		Id[1] = buf.get();
+		Id[2] = buf.get();
+		Id[3] = buf.get();
 		manufacturerID = buf.getShort();
 		version = buf.get();
 		deviceType = buf.get();
@@ -268,10 +264,10 @@ public final class VariableDataResponse {
 
 	}
 
-	/*
+	/**
 	 * Parses the apdu and stores the result in VariableDataBlock
 	 */
-	public VariableDataResponse parse(ByteBuffer buf) throws IOException {
+	VariableDataResponse parse(ByteBuffer buf) throws IOException {
 
 		try {
 

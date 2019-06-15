@@ -22,6 +22,8 @@ package org.openmuc.jmbus;
 
 import java.io.IOException;
 
+import org.openmuc.jmbus.internal.MBusLPdu;
+
 import junit.framework.TestCase;
 
 public class MBusLPduTest extends TestCase {

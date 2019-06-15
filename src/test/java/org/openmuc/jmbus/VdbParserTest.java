@@ -20,7 +20,6 @@
  */
 package org.openmuc.jmbus;
 
-import java.text.ParseException;
 import java.util.Date;
 
 import junit.framework.TestCase;
@@ -36,9 +35,9 @@ public class VdbParserTest extends TestCase {
 						(byte) 0x12 }, null);
 
 		try {
-			vdb.parse();
+			vdb.decode();
 
-			Object obj = vdb.getData();
+			Object obj = vdb.getDataValue();
 
 			assertEquals(obj instanceof Long, true);
 
@@ -48,7 +47,7 @@ public class VdbParserTest extends TestCase {
 
 			assertEquals(new Long(1330927310113874706l), val);
 
-		} catch (ParseException e) {
+		} catch (DecodingException e) {
 			fail("Unexpected exception");
 		}
 
@@ -56,9 +55,9 @@ public class VdbParserTest extends TestCase {
 				(byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF }, null);
 
 		try {
-			vdb.parse();
+			vdb.decode();
 
-			Object obj = vdb.getData();
+			Object obj = vdb.getDataValue();
 
 			assertEquals(obj instanceof Long, true);
 
@@ -66,7 +65,7 @@ public class VdbParserTest extends TestCase {
 
 			assertEquals(new Long(-1l), val);
 
-		} catch (ParseException e) {
+		} catch (DecodingException e) {
 			fail("Unexpected exception");
 		}
 
@@ -80,9 +79,9 @@ public class VdbParserTest extends TestCase {
 				null);
 
 		try {
-			vdb.parse();
+			vdb.decode();
 
-			Object obj = vdb.getData();
+			Object obj = vdb.getDataValue();
 
 			assertEquals(true, obj instanceof Long);
 
@@ -90,7 +89,7 @@ public class VdbParserTest extends TestCase {
 
 			assertEquals(new Long(1508), integer);
 
-		} catch (ParseException e) {
+		} catch (DecodingException e) {
 			fail("Failed to parse!");
 		}
 
@@ -99,9 +98,9 @@ public class VdbParserTest extends TestCase {
 		vdb = new VariableDataBlock(new byte[] { (byte) 0x04 }, new byte[] { (byte) 0x03 }, data, null);
 
 		try {
-			vdb.parse();
+			vdb.decode();
 
-			Object obj = vdb.getData();
+			Object obj = vdb.getDataValue();
 
 			assertEquals(true, obj instanceof Long);
 
@@ -109,7 +108,7 @@ public class VdbParserTest extends TestCase {
 
 			assertEquals(new Long(-1), integer);
 
-		} catch (ParseException e) {
+		} catch (DecodingException e) {
 			fail("Failed to parse!");
 		}
 
@@ -117,15 +116,15 @@ public class VdbParserTest extends TestCase {
 
 	private void assertParsingResults(VariableDataBlock vdb, Description desc, DlmsUnit unit, byte scaler, Object data) {
 		try {
-			vdb.parse();
-		} catch (ParseException e) {
+			vdb.decode();
+		} catch (DecodingException e) {
 			fail("Failed to parse!");
 		}
 
 		assertEquals(desc, vdb.getDescription());
 		assertEquals(unit, vdb.getUnit());
-		assertEquals(scaler, vdb.getMultiplier());
-		assertEquals(data, vdb.getData());
+		assertEquals(scaler, vdb.getMultiplierExponent());
+		assertEquals(data, vdb.getDataValue());
 	}
 
 	@Test
@@ -188,10 +187,10 @@ public class VdbParserTest extends TestCase {
 				(byte) 0x11, (byte) 0x78, (byte) 0x11 }, null);
 
 		try {
-			vdb.parse();
-			Date date = (Date) vdb.getData();
+			vdb.decode();
+			Date date = (Date) vdb.getDataValue();
 			System.out.println(date.getTime());
-		} catch (ParseException e) {
+		} catch (DecodingException e) {
 			fail("Failed to parse!");
 		}
 

@@ -4,8 +4,9 @@ apply plugin: 'osgi'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-version = '1.1.1'
+version = '1.2'
 group = 'org.openmuc'
+def projectName = 'jMBus'
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
@@ -30,7 +31,7 @@ uploadArchives {
       }
  
       pom.project {
-	name 'jMBus'
+	name projectName
 	packaging 'jar'
 	description 'jMBus is a library that can be used to implement an M-Bus master that reads meters.'
 	url 'http://www.openmuc.org/'
@@ -60,13 +61,13 @@ uploadArchives {
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
-   classifier = 'sources'
-   from sourceSets.main.allSource
+  classifier = 'sources'
+  from sourceSets.main.allSource
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
+  classifier = 'javadoc'
+  from javadoc.destinationDir
 }
 
 artifacts {
@@ -76,13 +77,15 @@ artifacts {
 }
 
 signing {
-  sign configurations.archives
+  if ( hasProperty('project.properties.signing.keyId') ) {
+    sign configurations.archives
+  }
 }
 
 jar {
   manifest {
     version = project.version.replace('-','.');
-    name = "jMBus"
+    name = projectName
     instruction 'Export-Package', '!*.internal.*,*'
   }
 }

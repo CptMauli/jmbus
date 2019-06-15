@@ -21,9 +21,10 @@
 package org.openmuc.jmbus;
 
 import java.io.IOException;
-import java.text.ParseException;
 
 import junit.framework.TestCase;
+
+import org.openmuc.jmbus.internal.MBusLPdu;
 
 public class MBusSapTest extends TestCase {
 	public void testResponseParser() {
@@ -63,20 +64,20 @@ public class MBusSapTest extends TestCase {
 		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
 			try {
 
-				vdb.parse();
+				vdb.decode();
 
 				if (vdb.getDescription() != null) {
 					System.out.print(vdb.getDescription().toString());
 				}
 
-				if (vdb.getData() != null) {
-					System.out.print(" Value: " + vdb.getData().toString());
+				if (vdb.getDataValue() != null) {
+					System.out.print(" Value: " + vdb.getDataValue().toString());
 				}
 
 				System.out.print(" Unit: " + vdb.getUnit());
 
 				System.out.println();
-			} catch (ParseException e) {
+			} catch (DecodingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -119,20 +120,20 @@ public class MBusSapTest extends TestCase {
 		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
 			try {
 
-				vdb.parse();
+				vdb.decode();
 
 				if (vdb.getDescription() != null) {
 					System.out.print(vdb.getDescription().toString());
 				}
 
-				if (vdb.getData() != null) {
-					System.out.print(" Value: " + vdb.getData().toString());
+				if (vdb.getDataValue() != null) {
+					System.out.print(" Value: " + vdb.getDataValue().toString());
 				}
 
 				System.out.print(" Unit: " + vdb.getUnit());
 
 				System.out.println();
-			} catch (ParseException e) {
+			} catch (DecodingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -174,20 +175,20 @@ public class MBusSapTest extends TestCase {
 		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
 			try {
 
-				vdb.parse();
+				vdb.decode();
 
 				if (vdb.getDescription() != null) {
 					System.out.print(vdb.getDescription().toString());
 				}
 
-				if (vdb.getData() != null) {
-					System.out.print(" Value: " + vdb.getData().toString());
+				if (vdb.getDataValue() != null) {
+					System.out.print(" Value: " + vdb.getDataValue().toString());
 				}
 
 				System.out.print(" Unit: " + vdb.getUnit());
 
 				System.out.println();
-			} catch (ParseException e) {
+			} catch (DecodingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -229,20 +230,20 @@ public class MBusSapTest extends TestCase {
 		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
 			try {
 
-				vdb.parse();
+				vdb.decode();
 
 				if (vdb.getDescription() != null) {
 					System.out.print(vdb.getDescription().toString());
 				}
 
-				if (vdb.getData() != null) {
-					System.out.print(" Value: " + vdb.getData().toString());
+				if (vdb.getDataValue() != null) {
+					System.out.print(" Value: " + vdb.getDataValue().toString());
 				}
 
 				System.out.print(" Unit: " + vdb.getUnit());
 
 				System.out.println();
-			} catch (ParseException e) {
+			} catch (DecodingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}

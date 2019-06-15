@@ -18,7 +18,7 @@
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-package org.openmuc.jmbus;
+package org.openmuc.jmbus.internal;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -30,10 +30,7 @@ import java.nio.ByteOrder;
  * are in format FT 1.2 according to IEC 870-5-2:1992.
  * 
  */
-
-// TODO - Implement checksum test! - Implement short frame parsing
-
-final class MBusLPdu {
+public final class MBusLPdu {
 
 	// Message types according to IEC 870-2 FT1.2
 	public static final int MSG_TYPE_SIMPLE_CHAR = 1;
@@ -56,12 +53,12 @@ final class MBusLPdu {
 
 	boolean parsed;
 
-	MBusLPdu(byte[] lpdu) {
+	public MBusLPdu(byte[] lpdu) {
 		this.lpdu = lpdu;
 		parsed = false;
 	}
 
-	ByteBuffer getAPDU() {
+	public ByteBuffer getAPDU() {
 		if (!parsed) {
 			throw new RuntimeException("MBusLPDU was not parsed.");
 		}
@@ -71,28 +68,28 @@ final class MBusLPdu {
 		return buf;
 	}
 
-	byte getAField() {
+	public byte getAField() {
 		if (!parsed) {
 			throw new RuntimeException("MBusLPDU was not parsed.");
 		}
 		return aField;
 	}
 
-	byte getCField() {
+	public byte getCField() {
 		if (!parsed) {
 			throw new RuntimeException("MBusLPDU was not parsed.");
 		}
 		return cField;
 	}
 
-	int getType() {
+	public int getType() {
 		if (!parsed) {
 			throw new RuntimeException("MBusLPDU was not parsed.");
 		}
 		return msgType;
 	}
 
-	void parse() throws IOException {
+	public void parse() throws IOException {
 
 		parsed = false;
 

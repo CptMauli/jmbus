@@ -1,3 +1,11 @@
+v1.2 16-Jan-2014
+----------------
+- ScanForMeter application added that can be used to scan all primary
+  addresses for meters
+- fix parsing manufacturer id
+- added decoding of alternate exteded VIFE field
+- ReadMeter application now prints more valuable information
+
 v1.1.1 09-Jan-2014
 ------------------
 - reinserted TimeoutException when reading

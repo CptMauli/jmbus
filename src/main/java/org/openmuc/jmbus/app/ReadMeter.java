@@ -18,17 +18,23 @@
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-package org.openmuc.jmbus;
+package org.openmuc.jmbus.app;
 
 import java.io.IOException;
-import java.text.ParseException;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+
+import org.openmuc.jmbus.Bcd;
+import org.openmuc.jmbus.DecodingException;
+import org.openmuc.jmbus.MBusSap;
+import org.openmuc.jmbus.VariableDataBlock;
+import org.openmuc.jmbus.VariableDataResponse;
 
 public final class ReadMeter {
 
 	private static void printUsage() {
-		System.out.println("SYNOPSIS\n\torg.openmuc.jmbus.ReadMeter <serial_port> <meter_address> [<baud_rate>]");
+		System.out.println("SYNOPSIS\n\torg.openmuc.jmbus.app.ReadMeter <serial_port> <meter_address> [<baud_rate>]");
 		System.out
 				.println("DESCRIPTION\n\tReads the given meter connected to the given serial port and prints the received data to stdout. Errors are printed to stderr.");
 		System.out.println("OPTIONS");
@@ -66,11 +72,6 @@ public final class ReadMeter {
 			System.exit(1);
 		}
 
-		try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e1) {
-		}
-
 		VariableDataResponse response = null;
 		try {
 			response = mBusSap.read(address);
@@ -84,46 +85,74 @@ public final class ReadMeter {
 			System.exit(1);
 		}
 
-		System.out.println("Vendor ID: " + response.getManufacturerID());
+		System.out.println("MeterID: " + response.getId() + ", ManufacturerID: " + response.getManufacturerId()
+				+ ", Version: " + response.getVersion() + ", Device Type: " + response.getDeviceType() + ", Status: "
+				+ response.getStatus());
 
 		List<VariableDataBlock> blocks = response.getVariableDataBlocks();
 
 		for (VariableDataBlock dataBlock : blocks) {
-			System.out.print("DIB:" + composeHexStringFromByteArray(dataBlock.getDIB()) + ", VIB:"
-					+ composeHexStringFromByteArray(dataBlock.getVIB()));
+
+			StringBuilder stringBuilder = new StringBuilder();
+
+			stringBuilder.append("DIB:").append(composeHexStringFromByteArray(dataBlock.getDIB()));
+			stringBuilder.append(", VIB:").append(composeHexStringFromByteArray(dataBlock.getVIB()));
 
 			try {
-				dataBlock.parse();
-			} catch (ParseException e) {
-				System.out.println(", failed to parse: " + e.getMessage());
+				dataBlock.decode();
+			} catch (DecodingException e) {
+				stringBuilder.append(", failed to decode DIB/VIB: ");
+				stringBuilder.append(e.getMessage());
+				System.out.println(stringBuilder.toString());
 				continue;
 			}
-			if (dataBlock.getDescription() != null) {
 
-				System.out.print(", descr:" + dataBlock.getDescription() + ", function:" + dataBlock.getFunctionField()
-						+ ", data type:" + dataBlock.getDataType() + ", value:");
+			stringBuilder.append(", descr:").append(dataBlock.getDescription());
+			stringBuilder.append(", function:").append(dataBlock.getFunctionField());
 
-				switch (dataBlock.getDataType()) {
-				case DATE:
-					System.out.println(dataBlock.getData());
-				case STRING:
-					System.out.println((String) dataBlock.getData());
-					break;
-				case DOUBLE:
-					System.out.println(dataBlock.getData() + ", multiplier:" + dataBlock.getMultiplier()
-							+ ", scaled data:" + dataBlock.getScaledValue() + " unit:" + dataBlock.getUnit());
-					break;
-				case LONG:
-					System.out.println(dataBlock.getData() + ", multiplier:" + dataBlock.getMultiplier()
-							+ ", scaled data:" + dataBlock.getScaledValue() + " unit:" + dataBlock.getUnit());
-					break;
-
-				}
+			if (dataBlock.getStorageNumber() > 0) {
+				stringBuilder.append(", storage:").append(dataBlock.getStorageNumber());
 			}
 
+			if (dataBlock.getTariff() > 0) {
+				stringBuilder.append(", tariff:").append(dataBlock.getTariff());
+			}
+
+			if (dataBlock.getSubunit() > 0) {
+				stringBuilder.append(", subunit:").append(dataBlock.getSubunit());
+			}
+
+			switch (dataBlock.getDataValueType()) {
+			case DATE:
+				stringBuilder.append(", value:").append(((Date) dataBlock.getDataValue()).toString());
+				break;
+			case STRING:
+				stringBuilder.append(", value:").append((String) dataBlock.getDataValue());
+				break;
+			case DOUBLE:
+				stringBuilder.append(", scaled value:").append(dataBlock.getScaledDataValue());
+				break;
+			case LONG:
+				if (dataBlock.getMultiplierExponent() == 0) {
+					stringBuilder.append(", value:").append(dataBlock.getDataValue());
+				}
+				else {
+					stringBuilder.append(", scaled value:").append(dataBlock.getScaledDataValue());
+				}
+				break;
+			case BCD:
+				stringBuilder.append(", value:").append(((Bcd) dataBlock.getDataValue()).toString());
+				break;
+			}
+
+			if (dataBlock.getUnit() != null) {
+				stringBuilder.append(", unit:").append(dataBlock.getUnit());
+			}
+
+			System.out.println(stringBuilder.toString());
 		}
 
-		if (response.hasManufacturerData()) {
+		if (response.getManufacturerData() != null) {
 			System.out.println("Manufacturer specific data follows:");
 			int j = 0;
 			for (byte element : response.manufacturerData) {

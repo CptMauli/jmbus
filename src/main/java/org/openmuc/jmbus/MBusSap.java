@@ -34,6 +34,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.TimeoutException;
 
+import org.openmuc.jmbus.internal.MBusLPdu;
+
 /**
  * M-Bus Application Layer Service Access Point
  * 
@@ -146,7 +148,7 @@ public final class MBusSap {
 	}
 
 	/**
-	 * Sends a data request to the remote device and returns the Variable Data Response received.
+	 * Sends a data request (REQ_UD2) to the remote device and returns the Variable Data Response received.
 	 * 
 	 * @param meterAddress
 	 *            e.g. p1 or s...
@@ -314,52 +316,52 @@ public final class MBusSap {
 		return rcvdMessage;
 	}
 
-	private void applicationReset(String meterAddr, boolean hasSubCode, byte subCode) throws IOException,
-			TimeoutException {
-		byte[] subCodeArray;
-		int len;
+	// private void applicationReset(String meterAddr, boolean hasSubCode, byte subCode) throws IOException,
+	// TimeoutException {
+	// byte[] subCodeArray;
+	// int len;
+	//
+	// if (hasSubCode) {
+	// len = 1;
+	// subCodeArray = new byte[1];
+	// subCodeArray[0] = subCode;
+	// }
+	// else {
+	// len = 0;
+	// subCodeArray = null;
+	// }
+	//
+	// if (meterAddr.charAt(0) == 'p') {
+	// /* SND_UD Application reset */
+	// sendLongMessage(getAddress(meterAddr), 0x53, 50, len, subCodeArray);
+	// }
+	// else {
+	// // TODO change timeout
+	// if (selectComponent(getAddress(meterAddr), (short) 0xffff, (byte) 0xff, (byte) 0xff, 2000)) {
+	// /* SND_UD Application reset */
+	// sendLongMessage(0xfd, 0x53, 50, len, subCodeArray);
+	// }
+	// else {
+	// // select timeout
+	// throw new TimeoutException();
+	// }
+	// }
+	//
+	// MBusLPdu lpdu = receiveMessage();
+	// lpdu.parse();
+	//
+	// if (lpdu.getType() != MBusLPdu.MSG_TYPE_SIMPLE_CHAR) {
+	// throw new IOException("Invalid message received!");
+	// }
+	// }
 
-		if (hasSubCode) {
-			len = 1;
-			subCodeArray = new byte[1];
-			subCodeArray[0] = subCode;
-		}
-		else {
-			len = 0;
-			subCodeArray = null;
-		}
-
-		if (meterAddr.charAt(0) == 'p') {
-			/* SND_UD Application reset */
-			sendLongMessage(getAddress(meterAddr), 0x53, 50, len, subCodeArray);
-		}
-		else {
-			// TODO change timeout
-			if (selectComponent(getAddress(meterAddr), (short) 0xffff, (byte) 0xff, (byte) 0xff, 2000)) {
-				/* SND_UD Application reset */
-				sendLongMessage(0xfd, 0x53, 50, len, subCodeArray);
-			}
-			else {
-				// select timeout
-				throw new TimeoutException();
-			}
-		}
-
-		MBusLPdu lpdu = receiveMessage();
-		lpdu.parse();
-
-		if (lpdu.getType() != MBusLPdu.MSG_TYPE_SIMPLE_CHAR) {
-			throw new IOException("Invalid message received!");
-		}
-	}
-
-	public void applicationReset(String meterAddr) throws IOException, TimeoutException {
-		applicationReset(meterAddr, false, (byte) 0);
-	}
-
-	public void applicationReset(String meterAddr, byte subCode) throws IOException, TimeoutException {
-		applicationReset(meterAddr, true, subCode);
-	}
+	// public void applicationReset(String meterAddr) throws IOException, TimeoutException {
+	// applicationReset(meterAddr, false, (byte) 0);
+	// }
+	//
+	// public void applicationReset(String meterAddr, byte subCode) throws IOException, TimeoutException {
+	// applicationReset(meterAddr, true, subCode);
+	// }
 
 	private static int getAddress(String meterAddr) {
 
