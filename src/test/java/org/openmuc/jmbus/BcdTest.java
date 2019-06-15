@@ -18,27 +18,22 @@
  * along with jMBus.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 package org.openmuc.jmbus;
 
-public class DecodingException extends Exception {
+import org.junit.Assert;
+import org.junit.Test;
 
-	private static final long serialVersionUID = 1735527302166708223L;
+public class BcdTest {
 
-	public DecodingException() {
-		super();
-	}
+	@Test
+	public void testSetGetValue() {
 
-	public DecodingException(String s) {
-		super(s);
-	}
+		Bcd myBcd = new Bcd(new byte[] { 0x44, 0x44, 0x44, 0x44 });
 
-	public DecodingException(Throwable cause) {
-		super(cause);
-	}
+		System.out.println(Integer.MAX_VALUE);
 
-	public DecodingException(String s, Throwable cause) {
-		super(s, cause);
+		Assert.assertEquals(44444444, myBcd.intValue());
+
 	}
 
 }

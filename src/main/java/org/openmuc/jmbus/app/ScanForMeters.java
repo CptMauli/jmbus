@@ -25,7 +25,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.openmuc.jmbus.MBusSap;
 
-public final class ScanForMeters {
+public class ScanForMeters {
 
 	private static void printUsage() {
 		System.out.println("SYNOPSIS\n\torg.openmuc.jmbus.app.ScanForMeters <serial_port> [<baud_rate>]");

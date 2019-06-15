@@ -20,9 +20,10 @@
  */
 package org.openmuc.jmbus;
 
-
 /**
  * The device type that is part of the data header of a Variable Data Response.
+ * 
+ * @author Stefan Feuerhahn
  * 
  */
 public enum DeviceType {

@@ -22,44 +22,32 @@ package org.openmuc.jmbus;
 
 import java.io.IOException;
 
-import junit.framework.TestCase;
-
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmuc.jmbus.internal.MBusLPdu;
 
-public class MBusSapTest extends TestCase {
+public class MBusSapTest {
 	public void testResponseParser() {
 
 	}
 
-	public void testParser2() {
+	@Test
+	public void testParser2() throws IOException {
 		byte[] msg = MessagesTest.testMsg4;
 
 		MBusLPdu lpdu = new MBusLPdu(msg);
 
-		try {
-			lpdu.getAField();
-			fail("Missing expected exception");
-		} catch (RuntimeException re) {
-		}
-
-		try {
-			lpdu.parse();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		assertEquals(0, lpdu.getAField());
+		Assert.assertEquals(0, lpdu.getAField());
 
 		VariableDataResponse vdr = new VariableDataResponse();
 
 		try {
 			vdr.parse(lpdu.getAPDU());
 		} catch (IOException e) {
-			fail("IOException");
+			Assert.fail("IOException");
 		}
 
-		assertEquals(9, vdr.getVariableDataBlocks().size());
+		Assert.assertEquals(9, vdr.getVariableDataBlocks().size());
 
 		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
 			try {
@@ -85,37 +73,25 @@ public class MBusSapTest extends TestCase {
 
 	}
 
-	public void testParser3() {
+	@Test
+	public void testParser3() throws IOException {
 		byte[] msg = MessagesTest.testMsg5;
 
 		System.out.println("Test 3:");
 
 		MBusLPdu lpdu = new MBusLPdu(msg);
 
-		try {
-			lpdu.getAField();
-			fail("Missing expected exception");
-		} catch (RuntimeException re) {
-		}
-
-		try {
-			lpdu.parse();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		assertEquals(5, lpdu.getAField());
+		Assert.assertEquals(5, lpdu.getAField());
 
 		VariableDataResponse vdr = new VariableDataResponse();
 
 		try {
 			vdr.parse(lpdu.getAPDU());
 		} catch (IOException e) {
-			fail("IOException");
+			Assert.fail("IOException");
 		}
 
-		assertEquals(10, vdr.getVariableDataBlocks().size());
+		Assert.assertEquals(10, vdr.getVariableDataBlocks().size());
 
 		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
 			try {
@@ -140,37 +116,25 @@ public class MBusSapTest extends TestCase {
 		}
 	}
 
-	public void testParser4() {
+	@Test
+	public void testParser4() throws IOException {
 		byte[] msg = MessagesTest.testMsg6;
 
 		System.out.println("Test 4:");
 
 		MBusLPdu lpdu = new MBusLPdu(msg);
 
-		try {
-			lpdu.getAField();
-			fail("Missing expected exception");
-		} catch (RuntimeException re) {
-		}
-
-		try {
-			lpdu.parse();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		assertEquals(13, lpdu.getAField());
+		Assert.assertEquals(13, lpdu.getAField());
 
 		VariableDataResponse vdr = new VariableDataResponse();
 
 		try {
 			vdr.parse(lpdu.getAPDU());
 		} catch (IOException e) {
-			fail("IOException");
+			Assert.fail("IOException");
 		}
 
-		assertEquals(12, vdr.getVariableDataBlocks().size());
+		Assert.assertEquals(12, vdr.getVariableDataBlocks().size());
 
 		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
 			try {
@@ -195,37 +159,25 @@ public class MBusSapTest extends TestCase {
 		}
 	}
 
-	public void testParser5() {
+	@Test
+	public void testParser5() throws IOException {
 		byte[] msg = MessagesTest.testMsg7;
 
 		System.out.println("Test 5:\n-------");
 
 		MBusLPdu lpdu = new MBusLPdu(msg);
 
-		try {
-			lpdu.getAField();
-			fail("Missing expected exception");
-		} catch (RuntimeException re) {
-		}
-
-		try {
-			lpdu.parse();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		assertEquals(1, lpdu.getAField());
+		Assert.assertEquals(1, lpdu.getAField());
 
 		VariableDataResponse vdr = new VariableDataResponse();
 
 		try {
 			vdr.parse(lpdu.getAPDU());
 		} catch (IOException e) {
-			fail("IOException");
+			Assert.fail("IOException");
 		}
 
-		assertEquals(12, vdr.getVariableDataBlocks().size());
+		Assert.assertEquals(12, vdr.getVariableDataBlocks().size());
 
 		for (VariableDataBlock vdb : vdr.getVariableDataBlocks()) {
 			try {

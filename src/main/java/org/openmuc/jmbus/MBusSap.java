@@ -39,8 +39,10 @@ import org.openmuc.jmbus.internal.MBusLPdu;
 /**
  * M-Bus Application Layer Service Access Point
  * 
+ * @author Stefan Feuerhahn
+ * 
  */
-public final class MBusSap {
+public class MBusSap {
 
 	private final String serialPortName;
 	private SerialPort serialPort;
@@ -178,7 +180,7 @@ public final class MBusSap {
 			}
 		}
 
-		MBusLPdu lpdu = receiveMessage();
+		MBusLPdu lpdu = receiveLPdu();
 
 		VariableDataResponse vdr = new VariableDataResponse();
 		vdr.address = lpdu.getAField();
@@ -234,7 +236,7 @@ public final class MBusSap {
 			TimeoutException {
 		ByteBuffer bf = ByteBuffer.allocate(8);
 		byte[] ba = new byte[8];
-		MBusLPdu msg;
+		MBusLPdu lPdu;
 
 		bf.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -249,10 +251,9 @@ public final class MBusSap {
 		// send select
 		sendLongMessage(0xfd, 0x53, 0x52, 8, ba);
 
-		msg = receiveMessage();
-		if (msg != null) {
-			msg.parse();
-			if (msg.msgType == MBusLPdu.MSG_TYPE_SIMPLE_CHAR) {
+		lPdu = receiveLPdu();
+		if (lPdu != null) {
+			if (lPdu.msgType == MBusLPdu.MSG_TYPE_SIMPLE_CHAR) {
 				return true;
 			}
 		}
@@ -260,11 +261,10 @@ public final class MBusSap {
 		return false;
 	}
 
-	private MBusLPdu receiveMessage() throws IOException, TimeoutException {
+	private MBusLPdu receiveLPdu() throws IOException, TimeoutException {
 
 		int timeval = 0;
 		int readBytes = 0;
-		int i;
 		int messageLength = -1;
 
 		while ((timeout == 0 || timeval < timeout) && readBytes != messageLength) {
@@ -306,14 +306,12 @@ public final class MBusSap {
 		}
 
 		byte[] lpdu = new byte[messageLength];
-		for (i = 0; i < messageLength; i++) {
+		for (int i = 0; i < messageLength; i++) {
 			lpdu[i] = inputBuffer[i];
 		}
 
-		MBusLPdu rcvdMessage = new MBusLPdu(lpdu);
-		rcvdMessage.parse();
+		return new MBusLPdu(lpdu);
 
-		return rcvdMessage;
 	}
 
 	// private void applicationReset(String meterAddr, boolean hasSubCode, byte subCode) throws IOException,

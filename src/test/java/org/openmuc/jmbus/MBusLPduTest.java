@@ -22,53 +22,30 @@ package org.openmuc.jmbus;
 
 import java.io.IOException;
 
+import org.junit.Assert;
+import org.junit.Test;
 import org.openmuc.jmbus.internal.MBusLPdu;
 
-import junit.framework.TestCase;
+public class MBusLPduTest {
 
-public class MBusLPduTest extends TestCase {
-	public void testParser() {
+	@Test
+	public void testParser() throws IOException {
 		byte[] msg = MessagesTest.testMsg1;
 
 		MBusLPdu lpdu = new MBusLPdu(msg);
 
-		try {
-			lpdu.getAField();
-			fail("Missing expected exception");
-		} catch (RuntimeException re) {
-		}
-
-		try {
-			lpdu.parse();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		assertEquals(1, lpdu.getAField());
+		Assert.assertEquals(1, lpdu.getAField());
 
 		System.out.println(lpdu.getAPDU().capacity());
 	}
 
-	public void testParser2() {
+	@Test
+	public void testParser2() throws IOException {
 		byte[] msg = MessagesTest.testMsg4;
 
 		MBusLPdu lpdu = new MBusLPdu(msg);
 
-		try {
-			lpdu.getAField();
-			fail("Missing expected exception");
-		} catch (RuntimeException re) {
-		}
-
-		try {
-			lpdu.parse();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		assertEquals(0, lpdu.getAField());
+		Assert.assertEquals(0, lpdu.getAField());
 
 		System.out.println(lpdu.getAPDU().capacity());
 	}

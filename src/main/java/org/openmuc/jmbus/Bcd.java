@@ -23,10 +23,14 @@ package org.openmuc.jmbus;
 /**
  * Encodes and decodes BCD encoded numbers.
  * 
+ * @author Stefan Feuerhahn
+ * @author Michael Zillgith
+ * 
  */
-public final class Bcd {
+public class Bcd extends Number {
 
-	private byte[] value;
+	private static final long serialVersionUID = 790515601507532939L;
+	private final byte[] value;
 
 	public Bcd(int integer) {
 		int testint = integer;
@@ -84,7 +88,18 @@ public final class Bcd {
 		return new String(ba);
 	}
 
-	public int toInteger() {
+	@Override
+	public double doubleValue() {
+		return longValue();
+	}
+
+	@Override
+	public float floatValue() {
+		return longValue();
+	}
+
+	@Override
+	public int intValue() {
 		int result = 0;
 		int factor = 1;
 
@@ -98,8 +113,8 @@ public final class Bcd {
 		return result;
 	}
 
-	public long toLong() {
-
+	@Override
+	public long longValue() {
 		long result = 0l;
 		long factor = 1l;
 

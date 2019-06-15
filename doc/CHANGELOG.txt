@@ -1,3 +1,15 @@
+v1.3 17-Jul-2014
+----------------
+- added decoding support for more VIBs and DIBS
+- fixed build script to work with newest gradle
+- fixed support for two digit BCDs
+- BCD now extends class Number again
+- added run script for ScanForMeters app
+- added thorough description on how to get RXTX running
+- RXTX src + native libs are now included in the distribution
+- added documentation on how to compile your own nativ part of RXTX.
+- added integration tests for better testing
+
 v1.2 16-Jan-2014
 ----------------
 - ScanForMeter application added that can be used to scan all primary

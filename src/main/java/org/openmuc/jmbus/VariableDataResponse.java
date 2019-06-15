@@ -29,7 +29,7 @@ import java.util.Vector;
 /**
  * Representation of the RESP-UD message. Will be returned by MBusSap.readMeter().
  */
-public final class VariableDataResponse {
+public class VariableDataResponse {
 
 	// Device Types
 	public static final byte OTHER = 0, OIL = 1, ELECTRICITY = 2, GAS = 3, HEAT = 4, STEAM = 5, WARM_WATER = 6,
@@ -201,6 +201,9 @@ public final class VariableDataResponse {
 				break;
 			case 0x07:
 				dataLength = 8;
+				break;
+			case 0x09:
+				dataLength = 1;
 				break;
 			case 0x0a:
 				dataLength = 2;

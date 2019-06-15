@@ -51,47 +51,8 @@ public final class MBusLPdu {
 	protected int apduStart;
 	protected int apduLength;
 
-	boolean parsed;
-
-	public MBusLPdu(byte[] lpdu) {
+	public MBusLPdu(byte[] lpdu) throws IOException {
 		this.lpdu = lpdu;
-		parsed = false;
-	}
-
-	public ByteBuffer getAPDU() {
-		if (!parsed) {
-			throw new RuntimeException("MBusLPDU was not parsed.");
-		}
-		ByteBuffer buf;
-		buf = ByteBuffer.wrap(lpdu, apduStart, apduLength);
-		buf.order(ByteOrder.LITTLE_ENDIAN);
-		return buf;
-	}
-
-	public byte getAField() {
-		if (!parsed) {
-			throw new RuntimeException("MBusLPDU was not parsed.");
-		}
-		return aField;
-	}
-
-	public byte getCField() {
-		if (!parsed) {
-			throw new RuntimeException("MBusLPDU was not parsed.");
-		}
-		return cField;
-	}
-
-	public int getType() {
-		if (!parsed) {
-			throw new RuntimeException("MBusLPDU was not parsed.");
-		}
-		return msgType;
-	}
-
-	public void parse() throws IOException {
-
-		parsed = false;
 
 		/* Determine message type */
 		switch (0xff & lpdu[0]) {
@@ -130,8 +91,25 @@ public final class MBusLPdu {
 			msgType = MSG_TYPE_UNKNOWN;
 			throw new IOException("Error parsing LPDU");
 		}
-
-		parsed = true;
-
 	}
+
+	public ByteBuffer getAPDU() {
+		ByteBuffer buf;
+		buf = ByteBuffer.wrap(lpdu, apduStart, apduLength);
+		buf.order(ByteOrder.LITTLE_ENDIAN);
+		return buf;
+	}
+
+	public byte getAField() {
+		return aField;
+	}
+
+	public byte getCField() {
+		return cField;
+	}
+
+	public int getType() {
+		return msgType;
+	}
+
 }

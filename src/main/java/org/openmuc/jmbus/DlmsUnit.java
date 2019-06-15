@@ -23,6 +23,8 @@ package org.openmuc.jmbus;
 /**
  * The units as defined in IEC 62056-62.
  * 
+ * @author Stefan Feuerhahn
+ * 
  */
 public enum DlmsUnit {
 	// can be found in IEC 62056-62.

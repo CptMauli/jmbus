@@ -46,11 +46,11 @@ import java.util.Calendar;
  * <li>Description - the meaning of the data value (e.g. "Energy", "Volume" etc.)</li>
  * <li>Unit - the unit of the data value.</li>
  * <li>Multiplier - a factor by which the data value coded in the data field has to be multiplied with.
- * <code>getScaledValue()</code> returns the result of the data value multiplied with the multiplier.</li>
+ * <code>getScaledDataValue()</code> returns the result of the data value multiplied with the multiplier.</li>
  * </ul>
  * 
  */
-public final class VariableDataBlock {
+public class VariableDataBlock {
 
 	public enum DataType {
 		LONG, DOUBLE, DATE, STRING, BCD;
@@ -69,7 +69,7 @@ public final class VariableDataBlock {
 	 * 
 	 */
 	public enum Description {
-		ENERGY, VOLUME, MASS, ON_TIME, OPERATING_TIME, POWER, VOLUME_FLOW, VOLUME_FLOW_EXT, MASS_FLOW, FLOW_TEMPERATURE, RETURN_TEMPERATURE, TEMPERATURE_DIFFERENCE, EXTERNAL_TEMPERATURE, PRESSURE, DATE, DATE_TIME, VOLTAGE, CURRENT, FABRICATION_NO, MODEL_VERSION, PARAMETER_SET_ID, HARDWARE_VERSION, FIRMWARE_VERSION, ERROR_FLAGS, CUSTOMER, RESERVED, OPERATING_TIME_BATTERY, HCA, REACTIVE_ENERGY, TEMPERATURE_LIMIT, MAX_POWER;
+		ENERGY, VOLUME, MASS, ON_TIME, OPERATING_TIME, POWER, VOLUME_FLOW, VOLUME_FLOW_EXT, MASS_FLOW, FLOW_TEMPERATURE, RETURN_TEMPERATURE, TEMPERATURE_DIFFERENCE, EXTERNAL_TEMPERATURE, PRESSURE, DATE, DATE_TIME, VOLTAGE, CURRENT, AVERAGING_DURATION, ACTUALITY_DURATION, FABRICATION_NO, MODEL_VERSION, PARAMETER_SET_ID, HARDWARE_VERSION, FIRMWARE_VERSION, ERROR_FLAGS, CUSTOMER, RESERVED, OPERATING_TIME_BATTERY, HCA, REACTIVE_ENERGY, TEMPERATURE_LIMIT, MAX_POWER, REACTIVE_POWER, REL_HUMIDITY, FREQUENCY, PHASE, EXTENDED_IDENTIFICATION, ADDRESS, NOT_SUPPORTED;
 	}
 
 	// Data Information Block that contains a DIF and optionally up to 10 DIFEs
@@ -213,7 +213,7 @@ public final class VariableDataBlock {
 	}
 
 	/**
-	 * The mutiplier is coded in the VIF. Is always a power of 10. This function returns the exponent. The base is
+	 * The multiplier is coded in the VIF. Is always a power of 10. This function returns the exponent. The base is
 	 * always 10.
 	 * 
 	 * @return the exponent of the multiplier.
@@ -236,7 +236,9 @@ public final class VariableDataBlock {
 
 		decoded = false;
 
+		//
 		// decode DIB
+		//
 		int ff = ((dib[0] & 0x30) >> 4);
 		switch (ff) {
 		case 0:
@@ -268,20 +270,32 @@ public final class VariableDataBlock {
 
 		unit = null;
 
+		//
 		// decode VIB
-
-		if (vib[0] == (byte) 0xFD) {
-			decodeMainExtendedVif();
-		}
-		else if (vib[0] == (byte) 0xFB) {
+		//
+		if (vib[0] == (byte) 0xFB) {
 			decodeAlternateExtendedVif();
 		}
+		else if ((vib[0] & 0x7F) == (byte) 0x7C) {
+			throw new RuntimeException("VIF types 0x7C/FC not supported.");
+		}
+		else if (vib[0] == (byte) 0xFD) {
+			decodeMainExtendedVif();
+		}
+		else if ((vib[0] & 0x7F) == (byte) 0x7E) {
+			throw new RuntimeException("VIF types 0x7E/FE not supported.");
+		}
+		else if ((vib[0] & 0x7F) == (byte) 0x7F) {
+			throw new RuntimeException("VIF types 0x7F/FF not supported.");
+		}
 		else {
+			// primary VIF
 			decodeMainVif();
 		}
 
+		//
 		// decode dataField
-
+		//
 		switch (dataField) {
 		case 0x01: /* INT8 */
 			data = new Long(dataBytes[0]);
@@ -312,12 +326,11 @@ public final class VariableDataBlock {
 				// negative
 				data = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8) | ((dataBytes[2] & 0xff) << 16)
 						| 0xff << 24);
-				dataType = DataType.LONG;
 			}
 			else {
 				data = new Long((dataBytes[0] & 0xff) | ((dataBytes[1] & 0xff) << 8) | ((dataBytes[2] & 0xff) << 16));
-				dataType = DataType.LONG;
 			}
+			dataType = DataType.LONG;
 			break;
 		case 0x04: /* INT32 */
 			if (dateTypeF) {
@@ -369,6 +382,7 @@ public final class VariableDataBlock {
 					| (((long) dataBytes[7] & 0xff) << 56));
 			dataType = DataType.LONG;
 			break;
+		case 0x09:
 		case 0x0a:
 		case 0x0b:
 		case 0x0c:
@@ -415,7 +429,9 @@ public final class VariableDataBlock {
 		}
 	}
 
-	private void decodeMainVif() throws DecodingException {
+	private void decodeMainVif() {
+		description = Description.NOT_SUPPORTED;
+
 		if ((vib[0] & 0x40) == 0) {
 			// E0
 			if ((vib[0] & 0x20) == 0) {
@@ -460,13 +476,12 @@ public final class VariableDataBlock {
 						if ((vib[0] & 0x04) == 0) {
 							// E010 00
 							description = Description.ON_TIME;
-							decodeTimeUnit();
 						}
 						else {
 							// E010 01
 							description = Description.OPERATING_TIME;
-							decodeTimeUnit();
 						}
+						decodeTimeUnit();
 					}
 					else {
 						// E010 1
@@ -586,7 +601,7 @@ public final class VariableDataBlock {
 									unit = DlmsUnit.RESERVED;
 								}
 								else {
-									throw new DecodingException("Unknown VIF");
+									description = Description.NOT_SUPPORTED;
 								}
 
 							}
@@ -598,7 +613,13 @@ public final class VariableDataBlock {
 					// E111
 					if ((vib[0] & 0x08) == 0) {
 						// E111 0
-						throw new DecodingException("Unknown VIF");
+						if ((vib[0] & 0x04) == 0) {
+							description = Description.AVERAGING_DURATION;
+						}
+						else {
+							description = Description.ACTUALITY_DURATION;
+						}
+						decodeTimeUnit();
 					}
 					else {
 						// E111 1
@@ -612,16 +633,17 @@ public final class VariableDataBlock {
 								}
 								else {
 									// E111 1001
+									description = Description.EXTENDED_IDENTIFICATION;
 								}
 							}
 							else {
 								// E111 101
 								if ((vib[0] & 0x01) == 0) {
-
+									description = Description.ADDRESS;
 								}
 								else {
 									// E111 1011
-									// Codes used with extension indicator 0xFB (Table 12 of EN 13757-3)
+									// Codes used with extension indicator 0xFB (table 29 of DIN EN 13757-3:2011)
 									decodeAlternateExtendedVif();
 								}
 							}
@@ -632,10 +654,13 @@ public final class VariableDataBlock {
 								// E111 110
 								if ((vib[0] & 0x01) == 0) {
 									// E111 1100
+									// Extension indicator 0xFC: VIF is given in following string
+									description = Description.NOT_SUPPORTED;
 								}
 								else {
 									// E111 1101
-									// Extension indicator 0xFD: main VIFE-code extension table
+									// Extension indicator 0xFD: main VIFE-code extension table (table 28 of DIN EN
+									// 13757-3:2011)
 									decodeMainExtendedVif();
 
 								}
@@ -651,6 +676,7 @@ public final class VariableDataBlock {
 
 	}
 
+	// implements table 28 of DIN EN 13757-3:2011
 	private void decodeMainExtendedVif() {
 		if ((vib[1] & 0x70) == 0x40) {
 			description = Description.VOLTAGE;
@@ -666,16 +692,16 @@ public final class VariableDataBlock {
 			description = Description.OPERATING_TIME_BATTERY;
 			switch (vib[1] & 0x03) {
 			case 0:
-				unit = DlmsUnit.SECOND;
-				break;
-			case 1:
-				unit = DlmsUnit.MIN;
-				break;
-			case 2:
 				unit = DlmsUnit.HOUR;
 				break;
-			case 3:
+			case 1:
 				unit = DlmsUnit.DAY;
+				break;
+			case 2:
+				unit = DlmsUnit.MONTH;
+				break;
+			case 3:
+				unit = DlmsUnit.YEAR;
 			}
 		}
 		else if ((vib[1] & 0x7f) == 0x0b) {
@@ -690,18 +716,24 @@ public final class VariableDataBlock {
 		else if ((vib[1] & 0x7f) == 0x0e) {
 			description = Description.FIRMWARE_VERSION;
 		}
-		else if ((vib[1] & 0x7f) == 0x17) {
-			description = Description.ERROR_FLAGS;
-		}
 		else if ((vib[1] & 0x7f) == 0x11) {
 			description = Description.CUSTOMER;
 		}
-		else if ((vib[1] & 0x7f) > 0x71) {
+		else if ((vib[1] & 0x7f) == 0x17) {
+			description = Description.ERROR_FLAGS;
+		}
+		else if ((vib[1] & 0x7f) >= 0x77) {
 			description = Description.RESERVED;
+		}
+		else {
+			description = Description.NOT_SUPPORTED;
 		}
 	}
 
-	private void decodeAlternateExtendedVif() throws DecodingException {
+	// implements table 29 of DIN EN 13757-3:2011
+	private void decodeAlternateExtendedVif() {
+		description = Description.NOT_SUPPORTED; // default value
+
 		if ((vib[1] & 0x40) == 0) {
 			// E0
 			if ((vib[1] & 0x20) == 0) {
@@ -728,7 +760,7 @@ public final class VariableDataBlock {
 						}
 						else {
 							// E000 01
-							throw new DecodingException("Unknown VIB");
+							description = Description.NOT_SUPPORTED;
 						}
 					}
 					else {
@@ -743,13 +775,15 @@ public final class VariableDataBlock {
 							}
 							else {
 								// E000 101
-								throw new DecodingException("Unknown VIB");
+								description = Description.NOT_SUPPORTED;
 							}
 
 						}
 						else {
 							// E000 11
-							throw new DecodingException("Unknown VIB");
+							description = Description.ENERGY;
+							multiplierExponent = 5 + (vib[1] & 0x03);
+							unit = DlmsUnit.CALORIFIC_VALUE;
 						}
 					}
 				}
@@ -762,17 +796,19 @@ public final class VariableDataBlock {
 							if ((vib[1] & 0x02) == 0) {
 								// E001 000
 								description = Description.VOLUME;
-								multiplierExponent = (vib[1] & 0x01) + 2;
+								multiplierExponent = 2 + (vib[1] & 0x01);
 								unit = DlmsUnit.CUBIC_METRE;
 							}
 							else {
 								// E001 001
-								throw new DecodingException("Unknown VIB");
+								description = Description.NOT_SUPPORTED;
 							}
 						}
 						else {
 							// E001 01
-							throw new DecodingException("Unknown VIB");
+							description = Description.REACTIVE_POWER;
+							multiplierExponent = (vib[1] & 0x03);
+							unit = DlmsUnit.VAR;
 						}
 					}
 					else {
@@ -787,13 +823,15 @@ public final class VariableDataBlock {
 							}
 							else {
 								// E001 101
-								throw new DecodingException("Unknown VIB");
+								description = Description.REL_HUMIDITY;
+								multiplierExponent = -1 + (vib[1] & 0x01);
+								unit = DlmsUnit.PERCENTAGE;
 							}
 
 						}
 						else {
 							// E001 11
-							throw new DecodingException("Unknown VIB");
+							description = Description.NOT_SUPPORTED;
 						}
 					}
 
@@ -811,7 +849,9 @@ public final class VariableDataBlock {
 								// E010 000
 								if ((vib[1] & 0x01) == 0) {
 									// E010 0000
-									throw new DecodingException("Unknown VIB");
+									description = Description.VOLUME;
+									multiplierExponent = 0;
+									unit = DlmsUnit.CUBIC_FEET;
 								}
 								else {
 									// E010 0001
@@ -822,11 +862,11 @@ public final class VariableDataBlock {
 							}
 							else {
 								// E010 001
+								// outdated value !
 								description = Description.VOLUME;
 								multiplierExponent = -1 + (vib[1] & 0x01);
 								unit = DlmsUnit.US_GALLON;
 							}
-
 						}
 						else {
 							// E010 01
@@ -834,12 +874,14 @@ public final class VariableDataBlock {
 								// E010 010
 								if ((vib[1] & 0x01) == 0) {
 									// E010 0100
+									// outdated value !
 									description = Description.VOLUME_FLOW;
 									multiplierExponent = -3;
 									unit = DlmsUnit.US_GALLON_PER_MINUTE;
 								}
 								else {
 									// E010 0101
+									// outdated value !
 									description = Description.VOLUME_FLOW;
 									multiplierExponent = 0;
 									unit = DlmsUnit.US_GALLON_PER_MINUTE;
@@ -849,13 +891,14 @@ public final class VariableDataBlock {
 								// E010 011
 								if ((vib[1] & 0x01) == 0) {
 									// E010 0110
+									// outdated value !
 									description = Description.VOLUME_FLOW;
 									multiplierExponent = 0;
 									unit = DlmsUnit.US_GALLON_PER_HOUR;
 								}
 								else {
 									// E010 0111
-									throw new DecodingException("Unknown VIB");
+									description = Description.NOT_SUPPORTED;
 								}
 							}
 
@@ -872,14 +915,25 @@ public final class VariableDataBlock {
 								unit = DlmsUnit.WATT;
 							}
 							else {
-								// E010 101
-								throw new DecodingException("Unknown VIB");
+								if ((vib[1] & 0x01) == 0) {
+									// E010 1010
+									description = Description.PHASE;
+									multiplierExponent = -1; // is -1 or 0 correct ??
+									unit = DlmsUnit.DEGREE;
+								}
+								else {
+									// E010 1011
+									description = Description.PHASE;
+									multiplierExponent = -1; // is -1 or 0 correct ??
+									unit = DlmsUnit.DEGREE;
+								}
 							}
-
 						}
 						else {
 							// E010 11
-							throw new DecodingException("Unknown VIB");
+							description = Description.FREQUENCY;
+							multiplierExponent = -3 + (vib[1] & 0x03);
+							unit = DlmsUnit.HERTZ;
 						}
 					}
 				}
@@ -897,17 +951,17 @@ public final class VariableDataBlock {
 							}
 							else {
 								// E011 001
-								throw new DecodingException("Unknown VIB");
+								description = Description.NOT_SUPPORTED;
 							}
 						}
 						else {
 							// E011 01
-							throw new DecodingException("Unknown VIB");
+							description = Description.NOT_SUPPORTED;
 						}
 					}
 					else {
 						// E011 1
-						throw new DecodingException("Unknown VIB");
+						description = Description.NOT_SUPPORTED;
 					}
 				}
 			}
@@ -918,24 +972,26 @@ public final class VariableDataBlock {
 				// E10
 				if ((vib[1] & 0x10) == 0) {
 					// E100
-					throw new DecodingException("Unknown VIB");
+					description = Description.NOT_SUPPORTED;
 				}
 				else {
 					// E101
 					if ((vib[1] & 0x08) == 0) {
 						// E101 0
-						throw new DecodingException("Unknown VIB");
+						description = Description.NOT_SUPPORTED;
 					}
 					else {
 						// E101 1
 						if ((vib[1] & 0x04) == 0) {
 							// E101 10
+							// outdated value !
 							description = Description.FLOW_TEMPERATURE;
 							multiplierExponent = (vib[1] & 0x03) - 3;
 							unit = DlmsUnit.DEGREE_FAHRENHEIT;
 						}
 						else {
 							// E101 11
+							// outdated value !
 							description = Description.RETURN_TEMPERATURE;
 							multiplierExponent = (vib[1] & 0x03) - 3;
 							unit = DlmsUnit.DEGREE_FAHRENHEIT;
@@ -951,12 +1007,14 @@ public final class VariableDataBlock {
 						// E110 0
 						if ((vib[1] & 0x04) == 0) {
 							// E110 00
+							// outdated value !
 							description = Description.TEMPERATURE_DIFFERENCE;
 							multiplierExponent = (vib[1] & 0x03) - 3;
 							unit = DlmsUnit.DEGREE_FAHRENHEIT;
 						}
 						else {
 							// E110 01
+							// outdated value !
 							description = Description.FLOW_TEMPERATURE;
 							multiplierExponent = (vib[1] & 0x03) - 3;
 							unit = DlmsUnit.DEGREE_FAHRENHEIT;
@@ -964,7 +1022,7 @@ public final class VariableDataBlock {
 					}
 					else {
 						// E110 1
-						throw new DecodingException("Unknown VIB");
+						description = Description.NOT_SUPPORTED;
 					}
 				}
 				else {
@@ -973,6 +1031,7 @@ public final class VariableDataBlock {
 						// E111 0
 						if ((vib[1] & 0x04) == 0) {
 							// E111 00
+							// outdated value !
 							description = Description.TEMPERATURE_LIMIT;
 							multiplierExponent = (vib[1] & 0x03) - 3;
 							unit = DlmsUnit.DEGREE_FAHRENHEIT;

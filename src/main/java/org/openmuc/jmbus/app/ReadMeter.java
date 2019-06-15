@@ -31,7 +31,7 @@ import org.openmuc.jmbus.MBusSap;
 import org.openmuc.jmbus.VariableDataBlock;
 import org.openmuc.jmbus.VariableDataResponse;
 
-public final class ReadMeter {
+public class ReadMeter {
 
 	private static void printUsage() {
 		System.out.println("SYNOPSIS\n\torg.openmuc.jmbus.app.ReadMeter <serial_port> <meter_address> [<baud_rate>]");
@@ -141,7 +141,12 @@ public final class ReadMeter {
 				}
 				break;
 			case BCD:
-				stringBuilder.append(", value:").append(((Bcd) dataBlock.getDataValue()).toString());
+				if (dataBlock.getMultiplierExponent() == 0) {
+					stringBuilder.append(", value:").append(((Bcd) dataBlock.getDataValue()).toString());
+				}
+				else {
+					stringBuilder.append(", scaled value:").append(dataBlock.getScaledDataValue());
+				}
 				break;
 			}
 

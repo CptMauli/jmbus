@@ -4,17 +4,26 @@ apply plugin: 'osgi'
 apply plugin: 'maven'
 apply plugin: 'signing'
 
-version = '1.2'
+version = '1.3'
 group = 'org.openmuc'
 def projectName = 'jMBus'
+def projectNameLowerCase = 'jmbus'
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
 
 repositories { mavenCentral() }
 
+sourceSets {
+  sample
+  itest {
+    compileClasspath += sourceSets.main.runtimeClasspath
+  }
+}
+
 dependencies {
   testCompile group: 'junit', name: 'junit', version: '4.11'
+  itestCompile group: 'junit', name: 'junit', version: '4.11'
   compile files('dependencies/rxtxcomm_api-2.2pre2-11_bundle.jar')
 }
 
@@ -29,13 +38,13 @@ uploadArchives {
       snapshotRepository(url: project.properties.sonatypeSnapshotRepository) {
         authentication(userName: project.properties.sonatypeUser, password: project.properties.sonatypePass)
       }
- 
+
       pom.project {
 	name projectName
 	packaging 'jar'
 	description 'jMBus is a library that can be used to implement an M-Bus master that reads meters.'
 	url 'http://www.openmuc.org/'
- 
+
 	licenses {
 	  license {
 	    name 'GNU Lesser General Public License'
@@ -43,7 +52,7 @@ uploadArchives {
 	    distribution 'repo'
 	  }
 	}
-	
+
 	scm {
 	  url 'none'
 	  connection 'none'
@@ -71,16 +80,26 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 }
 
 artifacts {
-  archives jar
   archives sourcesJar
   archives javadocJar
 }
 
 signing {
-  if ( hasProperty('project.properties.signing.keyId') ) {
+  if ( project.hasProperty('signing.keyId') ) {
     sign configurations.archives
   }
 }
+
+task copyLibs(type: Copy) {
+  dependsOn(configurations.default.getAllArtifacts().getBuildDependencies())
+  dependsOn(sourcesJar)  
+
+  into "build/libsdeps"
+  from configurations.default
+  from configurations.archives.getAllArtifacts().getFiles()
+}
+
+build.dependsOn(copyLibs)
 
 jar {
   manifest {
@@ -88,6 +107,11 @@ jar {
     name = projectName
     instruction 'Export-Package', '!*.internal.*,*'
   }
+}
+
+task itest(type: Test) {
+    testClassesDir = sourceSets.itest.output.classesDir
+    classpath += sourceSets.itest.runtimeClasspath
 }
 
 eclipse.pathVariables([GRADLE_USER_HOME:file(gradle.gradleUserHomeDir)])
@@ -112,13 +136,16 @@ task (tar, type: Tar) {
 
   into(project.archivesBaseName) {
     from('./') {
-      include 'doc/**/*'
-      include 'licenses/**/*'
-      include 'build/libs/**/*'
-      include 'build/javadoc/**/*'
+      include 'doc/*.txt'
+      include 'doc/userguide/' + projectNameLowerCase + '-doc.html'
+      include 'doc/userguide/graphics/**'
+      include 'licenses/**'
+      include 'build/libsdeps/**'
+      include 'build/javadoc/**'
       include 'build.gradle'
-      include 'dependencies/**/*'
-      include 'src/**/*'
+      include 'dependencies/**'
+      include 'src/**'
+      include 'runscripts/**'
     }
   }
 }
