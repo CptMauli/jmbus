@@ -10,6 +10,8 @@ import java.text.MessageFormat;
 
 import org.openmuc.jmbus.SecondaryAddress;
 import org.openmuc.jmbus.transportlayer.SerialBuilder;
+import org.openmuc.jmbus.transportlayer.TcpBuilder;
+import org.openmuc.jmbus.transportlayer.TransportLayer;
 import org.openmuc.jrxtx.DataBits;
 import org.openmuc.jrxtx.Parity;
 import org.openmuc.jrxtx.StopBits;
@@ -52,15 +54,11 @@ public interface WMBusConnection extends AutoCloseable {
 
     class WMBusSerialBuilder extends SerialBuilder<WMBusConnection, WMBusSerialBuilder> {
 
-        private WMBusManufacturer wmBusManufacturer;
-        private WMBusMode mode;
-        private WMBusListener listener;
+        private final Builder builder;
 
         public WMBusSerialBuilder(WMBusManufacturer wmBusManufacturer, WMBusListener listener, String serialPortName) {
             super(serialPortName);
-            this.listener = listener;
-            this.wmBusManufacturer = wmBusManufacturer;
-            this.mode = WMBusMode.T;
+            builder = new Builder(wmBusManufacturer, listener);
 
             switch (wmBusManufacturer) {
             case RADIO_CRAFTS:
@@ -74,39 +72,88 @@ public interface WMBusConnection extends AutoCloseable {
                 break;
             default:
                 // should not occur
-                throw new RuntimeException(MessageFormat.format("Error unknown man {0}.", wmBusManufacturer));
+                throw new RuntimeException(MessageFormat.format("Error unknown manufacturer {0}.", wmBusManufacturer));
             }
             setStopBits(StopBits.STOPBITS_1).setParity(Parity.NONE).setDataBits(DataBits.DATABITS_8);
         }
 
         public WMBusSerialBuilder setMode(WMBusMode mode) {
-            this.mode = mode;
-
+            builder.mode = mode;
             return self();
         }
 
         public WMBusSerialBuilder setWmBusManufacturer(WMBusManufacturer wmBusManufacturer) {
-            this.wmBusManufacturer = wmBusManufacturer;
+            builder.wmBusManufacturer = wmBusManufacturer;
             return self();
         }
 
         public WMBusSerialBuilder setListener(WMBusListener connectionListener) {
-            this.listener = connectionListener;
+            builder.listener = connectionListener;
             return self();
         }
 
         @Override
         public WMBusConnection build() throws IOException {
+            return builder.build(buildTransportLayer());
+        }
+
+    }
+
+    class WMBusTcpBuilder extends TcpBuilder<WMBusConnection, WMBusTcpBuilder> {
+
+        private final Builder builder;
+
+        public WMBusTcpBuilder(WMBusManufacturer wmBusManufacturer, WMBusListener listener, String hostAddress,
+                int port) {
+            super(hostAddress, port);
+            builder = new Builder(wmBusManufacturer, listener);
+        }
+
+        public WMBusTcpBuilder setMode(WMBusMode mode) {
+            builder.mode = mode;
+            return self();
+        }
+
+        public WMBusTcpBuilder setWmBusManufacturer(WMBusManufacturer wmBusManufacturer) {
+            builder.wmBusManufacturer = wmBusManufacturer;
+            return self();
+        }
+
+        public WMBusTcpBuilder setListener(WMBusListener connectionListener) {
+            builder.listener = connectionListener;
+            return self();
+        }
+
+        @Override
+        public WMBusConnection build() throws IOException {
+            return builder.build(buildTransportLayer());
+        }
+
+    }
+
+    class Builder {
+
+        private WMBusManufacturer wmBusManufacturer;
+        private WMBusMode mode;
+        private WMBusListener listener;
+
+        Builder(WMBusManufacturer wmBusManufacturer, WMBusListener listener) {
+            this.listener = listener;
+            this.wmBusManufacturer = wmBusManufacturer;
+            this.mode = WMBusMode.T;
+        }
+
+        WMBusConnection build(TransportLayer transportLayer) throws IOException {
             AbstractWMBusConnection wmBusConnection;
             switch (this.wmBusManufacturer) {
             case AMBER:
-                wmBusConnection = new WMBusConnectionAmber(mode, listener, buildTransportLayer());
+                wmBusConnection = new WMBusConnectionAmber(this.mode, this.listener, transportLayer);
                 break;
             case IMST:
-                wmBusConnection = new WMBusConnectionImst(mode, listener, buildTransportLayer());
+                wmBusConnection = new WMBusConnectionImst(this.mode, this.listener, transportLayer);
                 break;
             case RADIO_CRAFTS:
-                wmBusConnection = new WMBusConnectionRadioCrafts(mode, listener, buildTransportLayer());
+                wmBusConnection = new WMBusConnectionRadioCrafts(this.mode, this.listener, transportLayer);
                 break;
             default:
                 // should not occur.
@@ -116,12 +163,11 @@ public interface WMBusConnection extends AutoCloseable {
             wmBusConnection.open();
             return wmBusConnection;
         }
-
-        public enum WMBusManufacturer {
-            AMBER,
-            IMST,
-            RADIO_CRAFTS
-        }
     }
 
+    public enum WMBusManufacturer {
+        AMBER,
+        IMST,
+        RADIO_CRAFTS
+    }
 }

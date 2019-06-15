@@ -4,7 +4,7 @@ import java.io.IOException;
 
 class HciMessageException extends IOException {
 
-    private byte[] data;
+    private final byte[] data;
 
     public HciMessageException(byte[] data) {
         this.data = data;

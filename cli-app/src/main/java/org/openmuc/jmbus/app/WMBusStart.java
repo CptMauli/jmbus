@@ -37,7 +37,7 @@ class WMBusStart {
     }
 
     public static class WMBusReceiver implements WMBusListener {
-        private CliPrinter cliPrinter;
+        private final CliPrinter cliPrinter;
 
         public WMBusReceiver(CliPrinter cliPrinter) {
             this.cliPrinter = cliPrinter;

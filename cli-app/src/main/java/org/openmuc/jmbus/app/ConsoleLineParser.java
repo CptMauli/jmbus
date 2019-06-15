@@ -26,9 +26,11 @@ import org.openmuc.jmbus.internal.cli.IntCliParameter;
 import org.openmuc.jmbus.internal.cli.StringCliParameter;
 import org.openmuc.jmbus.transportlayer.Builder;
 import org.openmuc.jmbus.transportlayer.SerialBuilder;
+import org.openmuc.jmbus.transportlayer.TcpBuilder;
 import org.openmuc.jmbus.wireless.WMBusConnection;
+import org.openmuc.jmbus.wireless.WMBusConnection.WMBusManufacturer;
 import org.openmuc.jmbus.wireless.WMBusConnection.WMBusSerialBuilder;
-import org.openmuc.jmbus.wireless.WMBusConnection.WMBusSerialBuilder.WMBusManufacturer;
+import org.openmuc.jmbus.wireless.WMBusConnection.WMBusTcpBuilder;
 import org.openmuc.jmbus.wireless.WMBusMode;
 
 class ConsoleLineParser {
@@ -42,7 +44,6 @@ class ConsoleLineParser {
     private static byte[] difValue = {};
     private static byte[] vifValue = {};
     private static byte[] dataValue = {};
-    private final String wildcardValue = "ffffffff";
     private WMBusMode wMBusModeValue;
     private final Map<SecondaryAddress, byte[]> keyPairValues = new TreeMap<>();
 
@@ -87,7 +88,7 @@ class ConsoleLineParser {
 
     private final StringCliParameter wildcard = new CliParameterBuilder("-w")
             .setDescription("Use wildcard for region scan of secondary addresses e.g. 15ffffff")
-            .buildStringParameter("wildcard");
+            .buildStringParameter("wildcard", "ffffffff");
 
     private final StringCliParameter dif = new CliParameterBuilder("-dif")
             .setDescription("The data information field. Minimal two hex signs length e.g. 01")
@@ -107,7 +108,7 @@ class ConsoleLineParser {
             .buildStringParameter("transceiver");
 
     private final StringCliParameter wmbusMode = new CliParameterBuilder("-wm").setMandatory()
-            .setDescription("The wM-Bus mode can be S or T.")
+            .setDescription("The wM-Bus mode can be S, T or C.")
             .buildStringParameter("wmbus_mode");
 
     private final StringCliParameter key = new CliParameterBuilder("-key").setDescription(
@@ -166,6 +167,10 @@ class ConsoleLineParser {
             return;
         }
 
+        if (wildcard.isSelected()) {
+            checkWildcard();
+        }
+
         try {
             switch (cliParser.getSelectedGroup().toLowerCase()) {
             case "read":
@@ -179,10 +184,6 @@ class ConsoleLineParser {
                         (MBusConnection) builder.build(), cliPrinter);
                 break;
             case "wmbus":
-                if (comPortType != CommunicationPort.SERIAL) {
-                    this.cliPrinter.printError("Using wmbus with tcp is not possible, yet.", false);
-                    break;
-                }
                 WMBusConnection wmBusConnection = (WMBusConnection) builder.build();
                 Map<SecondaryAddress, byte[]> keyPairs = getKeyPairs();
                 for (Entry<SecondaryAddress, byte[]> keyPair : keyPairs.entrySet()) {
@@ -197,11 +198,6 @@ class ConsoleLineParser {
         } catch (IOException e) {
             this.cliPrinter.printError(e.getMessage(), false);
         }
-
-        if (wildcard.isSelected()) {
-            checkWildcard();
-        }
-
     }
 
     private Builder<?, ?> newBuilder() {
@@ -216,7 +212,17 @@ class ConsoleLineParser {
     }
 
     private Builder<?, ?> newTcpBuilder() {
-        return MBusConnection.newTcpBuilder(getHostAddress(), getPort()).setTimeout(getTimeout());
+        TcpBuilder<?, ?> connectionBuilder;
+
+        if (cliParser.getSelectedGroup().equalsIgnoreCase("wmbus")) {
+            WMBusManufacturer wmBusManufacturer = parseManufacturer();
+            connectionBuilder = new WMBusTcpBuilder(wmBusManufacturer, new WMBusStart.WMBusReceiver(this.cliPrinter),
+                    getHostAddress(), getPort()).setMode(getWMBusMode());
+        }
+        else {
+            connectionBuilder = MBusConnection.newTcpBuilder(getHostAddress(), getPort()).setTimeout(getTimeout());
+        }
+        return connectionBuilder.setTimeout(getTimeout());
     }
 
     private Builder<?, ?> newSerialBuilder() {
@@ -291,7 +297,7 @@ class ConsoleLineParser {
     }
 
     public String getWildcard() {
-        return wildcardValue;
+        return wildcard.getValue();
     }
 
     public boolean isVerbose() {
@@ -348,9 +354,9 @@ class ConsoleLineParser {
     }
 
     private void checkWildcard() {
-        if (wildcardValue.length() != WILDCARD_MASK_LENGTH) {
+        if (wildcard.getValue().length() != WILDCARD_MASK_LENGTH) {
             this.cliPrinter.printError("Allowed wildcard mask length is " + WILDCARD_MASK_LENGTH + " characters but is "
-                    + wildcardValue.length() + '.', false);
+                    + wildcard.getValue().length() + '.', false);
         }
     }
 

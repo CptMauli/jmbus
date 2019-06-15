@@ -8,6 +8,7 @@ package org.openmuc.jmbus.wireless;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.text.MessageFormat;
 import java.util.Arrays;
 
 import org.openmuc.jmbus.DecodingException;
@@ -158,8 +159,9 @@ class WMBusConnectionRadioCrafts extends AbstractWMBusConnection {
         sendByteInConfigMode(0x00);
 
         DataOutputStream os = getOutputStream();
+        int modeFlag = getModeFlag(mode);
 
-        init(os, mode.getFlag());
+        init(os, modeFlag);
 
         // /* Set Auto Answer Register */
         // sendByteInConfigMode(0x41);
@@ -168,6 +170,26 @@ class WMBusConnectionRadioCrafts extends AbstractWMBusConnection {
         // leave config mode
         os.write(0x58);
         os.flush();
+    }
+
+    private int getModeFlag(WMBusMode mode) throws IOException {
+        int modeFlag;
+
+        switch (mode) {
+        case C:
+            modeFlag = 0x04;
+            break;
+        case S:
+            modeFlag = 0x00;
+            break;
+        case T:
+            modeFlag = 0x02;
+            break;
+        default:
+            String msg = MessageFormat.format("wMBUS Mode ''{0}'' is not supported", mode.toString());
+            throw new IOException(msg);
+        }
+        return modeFlag;
     }
 
     private void init(DataOutputStream os, int modeFlag) throws IOException {

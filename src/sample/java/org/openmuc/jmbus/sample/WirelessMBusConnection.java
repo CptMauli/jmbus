@@ -4,8 +4,8 @@ import java.io.IOException;
 
 import org.openmuc.jmbus.SecondaryAddress;
 import org.openmuc.jmbus.wireless.WMBusConnection;
+import org.openmuc.jmbus.wireless.WMBusConnection.WMBusManufacturer;
 import org.openmuc.jmbus.wireless.WMBusConnection.WMBusSerialBuilder;
-import org.openmuc.jmbus.wireless.WMBusConnection.WMBusSerialBuilder.WMBusManufacturer;
 import org.openmuc.jmbus.wireless.WMBusListener;
 import org.openmuc.jmbus.wireless.WMBusMessage;
 import org.openmuc.jmbus.wireless.WMBusMode;
@@ -16,20 +16,14 @@ public class WirelessMBusConnection {
 
         @Override
         public void newMessage(WMBusMessage message) {
-            // TODO Auto-generated method stub
-
         }
 
         @Override
         public void discardedBytes(byte[] bytes) {
-            // TODO Auto-generated method stub
-
         }
 
         @Override
         public void stoppedListening(IOException cause) {
-            // TODO Auto-generated method stub
-
         }
 
     }
@@ -51,6 +45,9 @@ public class WirelessMBusConnection {
         }
 
         // end::todoc[]
+    }
+
+    private WirelessMBusConnection() {
     }
 
 }

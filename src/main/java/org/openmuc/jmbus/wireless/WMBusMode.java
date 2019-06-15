@@ -10,22 +10,15 @@ package org.openmuc.jmbus.wireless;
  */
 public enum WMBusMode {
     /**
-     * Frequent (868 MHz). Meter sends data several times/day.
+     * Compact (868.95 MHz). Combination of range (S) and battery efficiency (T). Suitable for frequent sending.
      */
-    T(0x02),
+    C,
     /**
-     * Stationary (8268 MHz). Meter sends data few times/day.
+     * Frequent (868.95 MHz). Meter sends data several times/day.
      */
-    S(0x00);
-
-    private int flag;
-
-    private WMBusMode(int flag) {
-        this.flag = flag;
-    }
-
-    public int getFlag() {
-        return this.flag;
-    }
-
+    T,
+    /**
+     * Stationary (868.3 MHz). Meter sends data few times/day.
+     */
+    S;
 }

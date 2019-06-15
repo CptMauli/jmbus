@@ -1,3 +1,11 @@
+v3.1.0 18-Apr-2018
+------------------
+- added wireless M-Bus TCP support
+- added Mode-C2 support, thanks to Ernst Rohlicek <e.rohlicek@kugu-home.com>
+- upgraded to v1.0.1 of jrxtx
+- fixed bug in newFromManufactureId(), thanks to Mr Struwe from kemper-olpe.de
+- fixed null pointer exception while scanning secondary address with cli-app
+
 v3.0.1 27-Oct-2017
 ------------------
 - Wireless M-Bus Imst: read length tag as unsigned

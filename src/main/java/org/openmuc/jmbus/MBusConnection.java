@@ -113,6 +113,11 @@ public class MBusConnection implements AutoCloseable {
      */
     public List<SecondaryAddress> scan(String wildcardMask, SecondaryAddressListener secondaryAddressListener)
             throws IOException {
+
+        if (wildcardMask == null || wildcardMask.isEmpty()) {
+            wildcardMask = "ffffffff";
+        }
+
         return ScanSecondaryAddress.scan(this, wildcardMask, secondaryAddressListener);
     }
 

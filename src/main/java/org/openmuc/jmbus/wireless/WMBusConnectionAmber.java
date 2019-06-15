@@ -165,6 +165,9 @@ class WMBusConnectionAmber extends AbstractWMBusConnection {
         case T:
             amberSetReg((byte) 0x46, (byte) 0x08); // T2-OTHER (correct for receiving station in T mode)
             break;
+        case C:
+            amberSetReg((byte) 0x46, (byte) 0x0e); // C2-OTHER
+            break;
         default:
             String message = MessageFormat.format("wMBUS Mode ''{0}'' is not supported", mode.toString());
             throw new IOException(message);

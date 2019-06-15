@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import org.openmuc.jmbus.MBusConnection;
 import org.openmuc.jmbus.MBusConnection.MBusSerialBuilder;
-import org.openmuc.jmbus.VariableDataStructure;
 
 public class WiredMBusConnection {
 
@@ -23,9 +22,7 @@ public class WiredMBusConnection {
         try (MBusConnection mBusConnection = builder.build()) {
             // tag::readtodoc[]
             int primaryAddress = 1;
-            VariableDataStructure vds = mBusConnection.read(primaryAddress);
-            // do something with the vds
-            // end::readtodoc[]
+            mBusConnection.read(primaryAddress);
         }
     }
 

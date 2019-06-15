@@ -118,7 +118,7 @@ class ScanSecondaryAddress {
      * @param wildcard
      *            secondary address wildcard e.g. f1ffffffffffffff
      * @return true if any device responsed else false
-     * @throws IOException 
+     * @throws IOException
      */
     private static boolean scanSelection(MBusConnection mBusConnection, SecondaryAddress wildcard) throws IOException {
         ByteBuffer bf = ByteBuffer.allocate(8);

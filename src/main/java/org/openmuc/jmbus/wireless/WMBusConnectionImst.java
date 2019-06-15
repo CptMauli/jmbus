@@ -122,6 +122,8 @@ class WMBusConnectionImst extends AbstractWMBusConnection {
             return 0x01; // Link/Radio Mode: S1-m
         case T:
             return 0x04; // Link/Radio Mode: T2
+        case C:
+            return 0x08; // Link/Radio Mode: C2 with telegram format A (C2 + format B = 0x09)
         default:
             String msg = MessageFormat.format("wMBUS Mode ''{0}'' is not supported", mode.toString());
             throw new IOException(msg);

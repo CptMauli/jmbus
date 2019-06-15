@@ -19,7 +19,7 @@ usually connected via USB. Currently jMBus supports transceivers from
 Amber, IMST and Radiocrafts. The library was tested with the AMB8465-M
 and AMB8665-M from Amber, the IM871A-USB from IMST and the RC1180-MBUS
 rom Radiocrafts. The jMBus only supports passive listening for
-messages in modes S and T at the moment. Encryption modes 1 and 5 are supported.
+messages in modes S, T and C2 at the moment. Encryption modes 1 and 5 are supported.
 
 .M-Bus master in a sample wiring. 
 image::box.jpg[mbus box wiring,400]

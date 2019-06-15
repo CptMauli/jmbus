@@ -243,9 +243,6 @@ public class DataRecord {
             }
             i++;
         }
-        else if ((vif & 0x7f) == 0x7e) {
-            throw new DecodingException("Received illegal VIF = E111 1110.");
-        }
         else {
             decodeMainVif(vif);
             if ((vif & 0x80) == 0x80) {
@@ -361,29 +358,19 @@ public class DataRecord {
             dataValueType = DataValueType.LONG;
             break;
         case 0x09:
-            dataValue = new Bcd(Arrays.copyOfRange(buffer, i, i + 1));
-            dataValueType = DataValueType.BCD;
-            i += 1;
+            i = setBCD(buffer, i, 1);
             break;
         case 0x0a:
-            dataValue = new Bcd(Arrays.copyOfRange(buffer, i, i + 2));
-            dataValueType = DataValueType.BCD;
-            i += 2;
+            i = setBCD(buffer, i, 2);
             break;
         case 0x0b:
-            dataValue = new Bcd(Arrays.copyOfRange(buffer, i, i + 3));
-            dataValueType = DataValueType.BCD;
-            i += 3;
+            i = setBCD(buffer, i, 3);
             break;
         case 0x0c:
-            dataValue = new Bcd(Arrays.copyOfRange(buffer, i, i + 4));
-            dataValueType = DataValueType.BCD;
-            i += 4;
+            i = setBCD(buffer, i, 4);
             break;
         case 0x0e:
-            dataValue = new Bcd(Arrays.copyOfRange(buffer, i, i + 6));
-            dataValueType = DataValueType.BCD;
-            i += 6;
+            i = setBCD(buffer, i, 6);
             break;
         case 0x0d:
 
@@ -430,6 +417,12 @@ public class DataRecord {
         }
 
         return i;
+    }
+
+    private int setBCD(byte[] buffer, int i, int j) {
+        dataValue = new Bcd(Arrays.copyOfRange(buffer, i, i + j));
+        dataValueType = DataValueType.BCD;
+        return i + j;
     }
 
     private void decodeDib(byte[] buffer, int i) {

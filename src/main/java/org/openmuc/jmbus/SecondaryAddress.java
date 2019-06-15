@@ -8,16 +8,19 @@ package org.openmuc.jmbus;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import javax.xml.bind.DatatypeConverter;
 
 /**
- * This class represents a secondary address. Use the static initalizer to initialize the
+ * This class represents a secondary address. Use the static initializer to initialize the
  */
 public class SecondaryAddress implements Comparable<SecondaryAddress> {
 
     private static final int SECONDARY_ADDRESS_LENGTH = 8;
+
+    private static final int ID_NUMBER_LENGTH = 4;
 
     private final String manufacturerId;
     private final Bcd deviceId;
@@ -70,8 +73,8 @@ public class SecondaryAddress implements Comparable<SecondaryAddress> {
      */
     public static SecondaryAddress newFromManufactureId(byte[] idNumber, String manufactureId, byte version, byte media)
             throws NumberFormatException {
-        if (idNumber.length != SECONDARY_ADDRESS_LENGTH) {
-            throw new NumberFormatException("Wrong length of ID. Length must be 8 byte.");
+        if (idNumber.length != ID_NUMBER_LENGTH) {
+            throw new NumberFormatException("Wrong length of ID. Length must be " + ID_NUMBER_LENGTH + " byte.");
         }
 
         byte[] mfId = encodeManufacturerId(manufactureId);
@@ -209,13 +212,16 @@ public class SecondaryAddress implements Comparable<SecondaryAddress> {
         }
 
         manufactureId = manufactureId.toUpperCase();
-
         char[] manufactureIdArray = manufactureId.toCharArray();
         int manufacturerIdAsInt = (manufactureIdArray[0] - 64) * 32 * 32;
         manufacturerIdAsInt += (manufactureIdArray[1] - 64) * 32;
-        manufacturerIdAsInt += (manufactureIdArray[1] - 64);
+        manufacturerIdAsInt += (manufactureIdArray[2] - 64);
 
-        return ByteBuffer.allocate(4).putInt(manufacturerIdAsInt).array();
+        ByteBuffer buf = ByteBuffer.allocate(2);
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        buf.putShort((short) manufacturerIdAsInt);
+
+        return buf.array();
     }
 
     private static Bcd decodeDeviceId(ByteArrayInputStream is) throws IOException {

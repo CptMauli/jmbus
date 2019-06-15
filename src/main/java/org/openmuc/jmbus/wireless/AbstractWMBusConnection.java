@@ -10,6 +10,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -28,7 +29,7 @@ abstract class AbstractWMBusConnection implements WMBusConnection {
     private final WMBusMode mode;
     private final WMBusListener listener;
 
-    final HashMap<SecondaryAddress, byte[]> keyMap = new HashMap<>();
+    final Map<SecondaryAddress, byte[]> keyMap = new HashMap<>();
 
     private volatile boolean closed;
     private final ExecutorService receiverService;

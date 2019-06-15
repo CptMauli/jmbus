@@ -8,8 +8,10 @@ package org.openmuc.jmbus;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import javax.xml.bind.DatatypeConverter;
+
 public class MessagesData {
-    /* RESP-UD EMH DIZ */
+    /** RESP-UD EMH DIZ */
     static final byte[] testMsg1 = new byte[] { (byte) 0x68, (byte) 0x21, (byte) 0x21, (byte) 0x68, (byte) 0x08,
             (byte) 0x01, (byte) 0x72, (byte) 0x02, (byte) 0x37, (byte) 0x62, (byte) 0x00, (byte) 0xa8, (byte) 0x15,
             (byte) 0x00, (byte) 0x02, (byte) 0x07, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x8c, (byte) 0x10,
@@ -17,7 +19,7 @@ public class MessagesData {
             (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x01, (byte) 0xfd, (byte) 0x17, (byte) 0x00,
             (byte) 0x8c, (byte) 0x16 };
 
-    /* RESP-UD NZR DHZ 5/63 M-BUS 2/230-1 single phase meter */
+    /** RESP-UD NZR DHZ 5/63 M-BUS 2/230-1 single phase meter */
     static final byte[] testMsg2 = new byte[] { (byte) 0x68, (byte) 0x32, (byte) 0x32, (byte) 0x68, (byte) 0x08,
             (byte) 0x05, (byte) 0x72, (byte) 0x08, (byte) 0x06, (byte) 0x10, (byte) 0x30, (byte) 0x52, (byte) 0x3b,
             (byte) 0x01, (byte) 0x02, (byte) 0x01, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x04, (byte) 0x03,
@@ -27,7 +29,7 @@ public class MessagesData {
             (byte) 0x00, (byte) 0x0c, (byte) 0x78, (byte) 0x08, (byte) 0x06, (byte) 0x10, (byte) 0x30, (byte) 0x0f,
             (byte) 0x0e, (byte) 0x71, (byte) 0x16 };
 
-    /* RESP-UD Elster F2 heat meter */
+    /** RESP-UD Elster F2 heat meter */
     static final byte[] testMsg3 = new byte[] { (byte) 0x68, (byte) 0x90, (byte) 0x90, (byte) 0x68, (byte) 0x08,
             (byte) 0x01, (byte) 0x72, (byte) 0x75, (byte) 0x96, (byte) 0x91, (byte) 0x00, (byte) 0xcd, (byte) 0x4e,
             (byte) 0x08, (byte) 0x04, (byte) 0x06, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x04, (byte) 0x07,
@@ -49,7 +51,7 @@ public class MessagesData {
             (byte) 0x39, (byte) 0x13, (byte) 0x01, (byte) 0xa0, (byte) 0x05, (byte) 0x61, (byte) 0x31, (byte) 0xd3,
             (byte) 0x16 };
 
-    /* Siemens water meter ?? */
+    /** Siemens water meter ?? */
     static final byte[] testMsg4 = new byte[] { (byte) 0x68, (byte) 0x59, (byte) 0x59, (byte) 0x68, (byte) 0x08,
             (byte) 0x00, (byte) 0x72, (byte) 0x82, (byte) 0x13, (byte) 0x02, (byte) 0x08, (byte) 0x65, (byte) 0x32,
             (byte) 0x99, (byte) 0x06, (byte) 0xeb, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x0c, (byte) 0x13,
@@ -64,7 +66,7 @@ public class MessagesData {
             (byte) 0x02, (byte) 0x7a, (byte) 0x0d, (byte) 0x00, (byte) 0x02, (byte) 0x78, (byte) 0x0d, (byte) 0x00,
             (byte) 0x11, (byte) 0x16 };
 
-    /* Siemens heat meter WFH21 */
+    /** Siemens heat meter WFH21 */
     static final byte[] testMsg5 = new byte[] { (byte) 0x68, (byte) 0x5e, (byte) 0x5e, (byte) 0x68, (byte) 0x08,
             (byte) 0x05, (byte) 0x72, (byte) 0x91, (byte) 0x64, (byte) 0x00, (byte) 0x08, (byte) 0x65, (byte) 0x32,
             (byte) 0x99, (byte) 0x06, (byte) 0xda, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x0c, (byte) 0x13,
@@ -79,7 +81,7 @@ public class MessagesData {
             (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x02, (byte) 0x7a, (byte) 0x25,
             (byte) 0x00, (byte) 0x02, (byte) 0x78, (byte) 0x25, (byte) 0x00, (byte) 0x82, (byte) 0x16 };
 
-    /* meter_1.txt from Mariusz Ryndzionek */
+    /** meter_1.txt from Mariusz Ryndzionek */
     static final byte[] testMsg6 = new byte[] { (byte) 0x68, (byte) 0x50, (byte) 0x50, (byte) 0x68, (byte) 0x08,
             (byte) 0x0d, (byte) 0x72, (byte) 0x13, (byte) 0x40, (byte) 0x56, (byte) 0x41, (byte) 0x74, (byte) 0x52,
             (byte) 0x52, (byte) 0x0c, (byte) 0x04, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x0c, (byte) 0xfb,
@@ -93,7 +95,7 @@ public class MessagesData {
             (byte) 0x09, (byte) 0x6b, (byte) 0x1a, (byte) 0x72, (byte) 0x6c, (byte) 0x00, (byte) 0x00, (byte) 0x97,
             (byte) 0x16 };
 
-    /* meter_2.txt from Mariusz Ryndzionek */
+    /*** meter_2.txt from Mariusz Ryndzionek */
     static final byte[] testMsg7 = new byte[] { (byte) 0x68, (byte) 0x88, (byte) 0x88, (byte) 0x68, (byte) 0x08,
             (byte) 0x01, (byte) 0x72, (byte) 0x75, (byte) 0x96, (byte) 0x91, (byte) 0x00, (byte) 0x74, (byte) 0x52,
             (byte) 0x08, (byte) 0x04, (byte) 0x06, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x04, (byte) 0x07,
@@ -113,6 +115,11 @@ public class MessagesData {
             (byte) 0x66, (byte) 0xcb, (byte) 0x05, (byte) 0xdf, (byte) 0x05, (byte) 0xff, (byte) 0xff, (byte) 0x9d,
             (byte) 0x39, (byte) 0x13, (byte) 0x01, (byte) 0xa0, (byte) 0x05, (byte) 0x61, (byte) 0x31, (byte) 0x55,
             (byte) 0x16 };
+
+    /** STV Automation, Bialon impulse counter */
+    static final byte[] testMsg8 = DatatypeConverter.parseHexBinary(
+            "6851516808007204000054964EC80F010000000600A50A00000000032800000005FE280000803F0600A1000000000003280000"
+                    + "0005FE280000803F0600030000000000032800000005FE280000803F03FD24580200B016");
 
     /* ABB A41 513-100 electric meter Message 1 */
     static final byte[] test_ABB_A41_Msg1 = new byte[] { (byte) 0x68, (byte) 0xf6, (byte) 0xf6, (byte) 0x68,
@@ -265,46 +272,4 @@ public class MessagesData {
     static final ArrayList<byte[]> test_ABB_A41_messages = new ArrayList<>(Arrays.asList(test_ABB_A41_Msg1,
             test_ABB_A41_Msg2, test_ABB_A41_Msg3, test_ABB_A41_Msg4, test_ABB_A41_Msg5));
     static final int[] test_ABB_A41_DataRecodSizes = { 23, 24, 16, 17, 17 };
-
-    // public static void main(String[] args) {
-    //
-    // byte b = (byte) 0xBF;
-    //
-    // System.out.println(b);
-    //
-    // int c = 0xff & b;
-    //
-    // System.out.println(c);
-    //
-    // if (args.length < 1) {
-    // System.err.println("Add message as hex string");
-    // System.exit(1);
-    // }
-    //
-    // String message = args[0];
-    //
-    // if ((message.length() % 2) != 0) {
-    // System.err.println("Invalid string length");
-    // System.exit(1);
-    // }
-    //
-    // int i = 0;
-    // int columnCount = 0;
-    // while (i < message.length()) {
-    // System.out.print("(byte) 0x" + message.substring(i, i + 2) + ", ");
-    // i += 2;
-    // columnCount++;
-    // if (columnCount == 8) {
-    // System.out.println();
-    // columnCount = 0;
-    // }
-    // }
-    // }
-    //
-    // public static void printBuffer(byte[] buffer) {
-    // for (int i = 0; i < buffer.length; i++) {
-    // System.out.println(i + ": " + String.format("%02x", 0xff & buffer[i]));
-    // }
-    // }
-
 }

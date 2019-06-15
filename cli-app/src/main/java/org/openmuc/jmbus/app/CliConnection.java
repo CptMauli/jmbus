@@ -168,7 +168,7 @@ class CliConnection {
         try {
             mBusConnection.setVerboseMessageListener(new VerboseMessageListenerImpl(cliPrinter));
 
-            cliPrinter.printInfo("Scanning address: ");
+            cliPrinter.printInfo("Scanning address: \n");
 
             if (scanSecondaryAddress) {
                 mBusConnection.scan(wildcardMask, new SecondaryAddressListenerImpl());
@@ -197,7 +197,7 @@ class CliConnection {
                     cliPrinter.printError("\nThread sleep fails.\n" + e.getMessage(), false);
                 }
                 VariableDataStructure vdr = mBusConnection.read(i);
-                cliPrinter.printInfo("\nFound device at primary address " + i + ":");
+                cliPrinter.printInfo("\nFound device at primary address :" + i + ", ");
                 cliPrinter.printlnInfo(vdr.getSecondaryAddress());
 
             } catch (InterruptedIOException e) {

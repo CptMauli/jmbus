@@ -54,7 +54,6 @@ public abstract class TcpBuilder<T, S extends TcpBuilder<T, S>> extends Builder<
 
     @Override
     protected TransportLayer buildTransportLayer() {
-        TcpLayer tcpTransportlayer = new TcpLayer(hostAddress, port, getTimeout());
-        return tcpTransportlayer;
+        return new TcpLayer(hostAddress, port, getTimeout());
     }
 }

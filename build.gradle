@@ -6,13 +6,12 @@ buildscript {
   }
   dependencies {
     classpath group: "org.asciidoctor", name: "asciidoctorj-pdf", version: "1.5.0-alpha.16"
-    classpath "biz.aQute.bnd:biz.aQute.bnd.gradle:3.3.0"
+    classpath "biz.aQute.bnd:biz.aQute.bnd.gradle:3.5.0"
   }
 }
 
 plugins {
   id "org.asciidoctor.convert" version "1.5.6"
-  id "net.saliman.cobertura" version "2.5.1"
 }
 
 apply plugin: "org.asciidoctor.convert"
@@ -46,7 +45,6 @@ configure(javaProjects) {
   apply plugin: "maven"
   apply plugin: "signing"
   apply plugin: "biz.aQute.bnd.builder"
-  apply plugin: 'net.saliman.cobertura'
 
   uploadArchives.enabled = false
   
@@ -73,9 +71,17 @@ configure(javaProjects) {
     }
   }
 
+  configurations {
+    jacoco
+    jacocoRuntime
+  }
+
   dependencies {
     testCompile group: "junit", name: "junit", version: "4.12"
     itestCompile group: "junit", name: "junit", version: "4.12"
+
+    jacoco group: 'org.jacoco', name: 'org.jacoco.ant', version: '0.7.9', classifier: 'nodeps'
+    jacocoRuntime group: 'org.jacoco', name: 'org.jacoco.agent', version: '0.7.9', classifier: 'runtime'
   }
   
   jar {
@@ -83,21 +89,70 @@ configure(javaProjects) {
       version = project.version.replace("-",".");
     }
   }
-  cobertura {
-  
-    dependencies {
-      testCompile 'org.slf4j:slf4j-simple:1.6.1'
+
+  task instrument {
+    ext.outputDir = buildDir.path + '/classes-instrumented'
+    doLast {
+      ant.taskdef(name: 'instrument',
+                  classname: 'org.jacoco.ant.InstrumentTask',
+                  classpath: configurations.jacoco.asPath)
+      
+
+      sourceSets.main.output.classesDirs.each{ f ->
+        // Copy directories from main source to instrumented path
+	    copy {
+		  from f
+		  into buildDir.path + '/instrumented_classes'
+	    }
+      }
+
+      ant.instrument(destdir: outputDir) {
+        fileset(dir: buildDir.path + '/instrumented_classes')
+      }
     }
- 	coverageFormats = ['html', 'xml']				
-  	coverageIgnoreTrivial = false					
-  	coverageIgnores = ['org.slf4j.Logger.*']
-  	coverageExcludes = ['.*\\.app\\..*', '.*\\.cli-app\\..*', '.*\\.sample\\..*']	
-   	coverageReportDir = new File("$buildDir/reports/cobertura")
-   	coverageTestTasks {
-      project.tasks.withType(Test).matching {it.name == 'test'}
-    }
- 	  
   }
+  
+  instrument.dependsOn classes
+  
+  gradle.taskGraph.whenReady { graph ->
+    if (graph.hasTask(instrument)) {
+      tasks.withType(Test) {
+        doFirst {
+          systemProperty 'jacoco-agent.destfile', buildDir.path + '/jacoco/tests.exec'
+          classpath = files(instrument.outputDir) + classpath + configurations.jacocoRuntime
+        }
+      }
+    }
+  }
+  
+  
+  task report {
+    doLast {
+      if (!file(buildDir.path + '/jacoco/tests.exec').exists()) {
+        return;
+      }
+      ant.taskdef(name: 'report',
+                  classname: 'org.jacoco.ant.ReportTask',
+                  classpath: configurations.jacoco.asPath)
+      ant.report() {
+        executiondata {
+          ant.file(file: buildDir.path + '/jacoco/tests.exec')
+        }
+        structure(name: 'Example') {
+           classfiles {
+             fileset(dir: buildDir.path + '/instrumented_classes')
+           }
+           sourcefiles {
+             fileset(dir: 'src/main/java')
+           }
+        }
+        html(destdir: buildDir.path + '/reports/jacoco')
+    }
+    }
+  }
+  
+  report.dependsOn instrument
+  report.dependsOn test
 
   task jarAll(type: Copy) {
     dependsOn(configurations.default.getAllArtifacts().getBuildDependencies())
@@ -149,7 +204,6 @@ configure(javaProjects) {
   javadoc {
     exclude "**/internal/**"
     exclude "**/java-gen/**"
-    exclude "**/app/**"
   }
 }
 
@@ -237,15 +291,16 @@ task writeSettings {
     out.write("include ");
     boolean first = true;
     for (Project myproject: distributionProjects) {
-      if (!myproject.getProjectDir().equals(getProjectDir())) {
-        if (first == true) {
-          first = false;
-        }
-        else {
-          out.write ", ";
-        }
-        out.write '"' + myproject.name + '"'
+      if (myproject.getProjectDir().equals(getProjectDir())) {
+        continue;  
       }
+      if (first) {
+        first = false;
+      }
+      else {
+        out.write ", ";
+      }
+      out.write '"' + myproject.name + '"'
     }
     out .write "\n\n";
 
