@@ -1,40 +1,46 @@
-1.0.0 07-Jan-2014
------------------
+v1.1.1 09-Jan-2014
+------------------
+- reinserted TimeoutException when reading
+- releasing to maven central repository
+
+v1.0.0 07-Jan-2014
+------------------
 - bug fix parsing manufacturer specific data
 - simple ReadMeter application is now part of the library. Its usage
   is documented in README.txt
 - serialports can be closed and opened again through the API
 - DLMSUnit is now an Enum
 
-0.10.0 04-Sep-2013
-------------------
+v0.10.0 04-Sep-2013
+-------------------
 - read now supports timeouts
 - serial port settings string is correctly parsed
 - data type can now be retrieved from DIF/VIF
 - finding correct serial port is now more efficient
 - bug fix in decoding DIF/VIF
 
-0.9.8 15-Mar-2012
------------------
+v0.9.8 15-Mar-2012
+------------------
 - changed build system to gradle
 - modified documentation and usage example
 
-0.97 20-Oct-2011
-----------------
-- short message is send in one command in MBusLSAP to prevent timeout, thanks to Hakan Gonene
+v0.9.7 20-Oct-2011
+------------------
+- short message is send in one command in MBusLSAP to prevent timeout,
+  thanks to Hakan Gonene
 
-0.96 19-Sep-2011
-----------------
+v0.9.6 19-Sep-2011
+------------------
 - added additional data types: data, date/time, varlen string
 - moved to maven
 
-0.94 3-Dec-2010
----------------
+v0.9.4 3-Dec-2010
+-----------------
 - Fixed build.xml file so a modfied library can be easily build.
 - Fixed some bugs when parsing M-Bus messages
 
-0.93 17-Nov-2010 
-----------------
+v0.9.3 17-Nov-2010 
+------------------
 - Fixed bug with integer treatment
 - Implemented application reset command
 - added voltage and current VIB interpretation

@@ -39,7 +39,7 @@ public final class ReadMeter {
 		System.out.println("\t<baud_rate>\n\t    The baud rate used to connect to the meter. Default is 2400.\n");
 	}
 
-	public static void main(String[] args) throws IOException, TimeoutException {
+	public static void main(String[] args) {
 		if (args.length < 2 || args.length > 3) {
 			printUsage();
 			System.exit(1);
@@ -59,7 +59,12 @@ public final class ReadMeter {
 		}
 
 		MBusSap mBusSap = new MBusSap(serialPortName);
-		mBusSap.open(baudRate);
+		try {
+			mBusSap.open(baudRate);
+		} catch (IOException e2) {
+			System.err.println("Failed to open serial port: " + e2.getMessage());
+			System.exit(1);
+		}
 
 		try {
 			Thread.sleep(1000);
@@ -71,6 +76,10 @@ public final class ReadMeter {
 			response = mBusSap.read(address);
 		} catch (IOException e) {
 			System.err.println("Error reading meter: " + e.getMessage());
+			mBusSap.close();
+			System.exit(1);
+		} catch (TimeoutException e) {
+			System.err.print("Read attempt timed out");
 			mBusSap.close();
 			System.exit(1);
 		}

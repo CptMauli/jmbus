@@ -154,8 +154,10 @@ public final class MBusSap {
 	 * @throws IOException
 	 *             if any kind of error (including timeout) occurs while trying to read the remote device. Note that the
 	 *             connection is not closed when an IOException is thrown.
+	 * @throws TimeoutException
+	 *             if no response at all (not even a single byte) was received from the meter within the timeout span.
 	 */
-	public VariableDataResponse read(String meterAddress) throws IOException {
+	public VariableDataResponse read(String meterAddress) throws IOException, TimeoutException {
 
 		if (serialPort == null) {
 			throw new IllegalStateException("Serial port is not open.");
@@ -226,7 +228,8 @@ public final class MBusSap {
 		return true;
 	}
 
-	private boolean selectComponent(int id, short manuf, byte version, byte medium, int timeout) throws IOException {
+	private boolean selectComponent(int id, short manuf, byte version, byte medium, int timeout) throws IOException,
+			TimeoutException {
 		ByteBuffer bf = ByteBuffer.allocate(8);
 		byte[] ba = new byte[8];
 		MBusLPdu msg;
@@ -255,7 +258,7 @@ public final class MBusSap {
 		return false;
 	}
 
-	private MBusLPdu receiveMessage() throws IOException {
+	private MBusLPdu receiveMessage() throws IOException, TimeoutException {
 
 		int timeval = 0;
 		int readBytes = 0;
@@ -292,8 +295,12 @@ public final class MBusSap {
 
 		}
 
+		if (readBytes == 0) {
+			throw new TimeoutException();
+		}
+
 		if (readBytes != messageLength) {
-			throw new IOException("Timeout listening for response message.");
+			throw new IOException("Incomplete response message received.");
 		}
 
 		byte[] lpdu = new byte[messageLength];

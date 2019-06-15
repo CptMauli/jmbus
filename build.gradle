@@ -2,8 +2,9 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'osgi'
 apply plugin: 'maven'
+apply plugin: 'signing'
 
-version = '1.0.0'
+version = '1.1.1'
 group = 'org.openmuc'
 
 sourceCompatibility = 1.6
@@ -12,18 +13,47 @@ targetCompatibility = 1.6
 repositories { mavenCentral() }
 
 dependencies {
-  testCompile group: 'junit', name: 'junit', version: '4.10'
+  testCompile group: 'junit', name: 'junit', version: '4.11'
   compile files('dependencies/rxtxcomm_api-2.2pre2-11_bundle.jar')
 }
 
 uploadArchives {
   repositories {
     mavenDeployer {
-      repository(url: project.properties.repository) {
-        authentication(userName: project.properties.artifactoryUser, password: project.properties.artifactoryPass)
+      beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+      repository(url: project.properties.sonatypeRepository) {
+        authentication(userName: project.properties.sonatypeUser, password: project.properties.sonatypePass)
       }
-      snapshotRepository(url: project.properties.snapshotRepository) {
-        authentication(userName: project.properties.artifactoryUser, password: project.properties.artifactoryPass)
+      snapshotRepository(url: project.properties.sonatypeSnapshotRepository) {
+        authentication(userName: project.properties.sonatypeUser, password: project.properties.sonatypePass)
+      }
+ 
+      pom.project {
+	name 'jMBus'
+	packaging 'jar'
+	description 'jMBus is a library that can be used to implement an M-Bus master that reads meters.'
+	url 'http://www.openmuc.org/'
+ 
+	licenses {
+	  license {
+	    name 'GNU Lesser General Public License'
+	    url 'http://www.gnu.org/licenses/lgpl-2.1.html'
+	    distribution 'repo'
+	  }
+	}
+	
+	scm {
+	  url 'none'
+	  connection 'none'
+	}
+
+	developers {
+	  developer {
+	    id 'sfeuerhahn'
+	    name 'Stefan Feuerhahn'
+	  }
+	}
       }
     }
   }
@@ -40,8 +70,13 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 }
 
 artifacts {
-   archives sourcesJar
-   archives javadocJar
+  archives jar
+  archives sourcesJar
+  archives javadocJar
+}
+
+signing {
+  sign configurations.archives
 }
 
 jar {
